@@ -1,7 +1,209 @@
-<html>
-	<head>
-	</head>
-	<body>
-		Project 1 here
-	</body>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<style>
+  body {
+    padding: 100px;
+    width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+</style>
+<title>CS 184 Rasterizer</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+
+
+<body>
+
+<h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2022</h1>
+<h1 align="middle">Project 1: Rasterizer</h1>
+<h2 align="middle">Mantej Panesar</h2>
+
+<br><br>
+
+<div>
+
+<h2>Overview</h2>
+<p>
+	This project explores the fundamentals of computer graphics by building a functional vector graphics renderer that implements supersampling, pixel sampling, and mipmap level sampling. The project provides an interactive GUI which allows users to witness the impact of each feature and how they behave in conjunction. 
+	Tasks 1-3 focus on implementing key components of the rasterization pipeline (drawing triangles, antialiasing, and transforms) and Tasks 4-6 focus on implementing texture mapping (via barycentric coordinates) and two sampling techniques (pixel and mipmap level sampling) to help mitigate the presence of rendering artifacts.
+	Throughout this project, I learned more about how images are stores as data and how that data can be manipulated under the hood. Additionally, I found the interactive GUI great for building my intuition on sampling, texture mapping, and the rasterization pipeline in general. Overall, I really enjoyed working on this project because it provided me with an opportunity to apply the theoretical knowledge from lecture to a concrete, tangible piece of software which puts the theory into practice!
+</p>
+
+<h2>Section I: Rasterization</h2>
+
+<h3>Task 1: Drawing Single-Color Triangles</h3>
+<p>Given three points which define a triangles vertices, I rasterized triangles by performing three line tests to check whether a sample point is contained within the triangle described by the three provided vertices. 
+	<br><br>
+	A naive approach would be to sample each pixel in the image and perform the three line tests for each to determine whether the pixel should be filled with a color or not. This naive approach would result in unnecessary pixel traversals and point-in-triangle tests (consider a triangle in a small subregion of the pixel space and the image dimensions are very large).
+	In order to reduce the uncessary traversals and computation, I computed the bounding box of the triangle by finding the maximum and minimum <code>x</code> and <code>y</code> values in order to determine two diagonal points which would encompass a minimal region that contains the triangle:
+	<br><br>
+	<code>xmin = min(min(x0, x1), x2)</code>
+	<br>
+	<code>ymin = min(min(y0, y1), y2)</code>
+	<br>
+	<code>xmax = max(max(x0, x1), x2)</code>
+	<br>
+	<code>ymax = max(max(y0, y1), y2)</code>
+	<br><br>
+	The pixel traversal would start at <code>xmin</code> and <code>ymin</code> and iterate up to <code>xmax</code> and <code>ymax</code> which gaurantees that the algorithm used to rasterize triangles will be no worse than sampling points within the bounding box of the triangle. 
+	With the bounding box established, I use a double for-loop to traverse the bounding box pixel space and obtain sample points which are sampled to check whether they lie within the provided triangle. 
+	<br><br>
+	In order to reduce code duplication for the logic of checking whether a point is within a triangle, I created two helper methods <code>line_test_pt</code> and <code>inside_triangle</code>.
+	The <code>line_test_pt</code> method computes <code>L(x, y) = -(x - x0)(y1 - y0) + (y - y0)(x1 - x0)</code> for a sample point <code>(x, y)</code> where <code>(x0, y0) and (x1, y1)</code> correspond to two vertices that form one side of the provided triangle.
+	Leveraging this computation, I implemented <code>inside_triangle</code> to run 3 line tests to determine whether the point is within the triangle (check that the sample point is within or on one of the three sides of the triangle).
+	<br><br>
+	Each sample point was obtained by sampling the center of a pixel (i.e. if the coordinate of a pixel is <code>(x,y)</code>, the sample point would be <code>(x + 0.5, y + 0.5)</code>). 
+	Each sample point would be passed to the <code>inside_triangle</code> method which leverages the <code>line_test_pt</code> method to return whether the sample point is contained in the triangle. 
+	If the sample point lies within the triangle, I invoke <code>fill_pixel</code> with the respective pixel's coordinates to apply the provided color, otherwise if the sample point did not lie within the triangle the pixel would remain uncolored.
+	<br><br>
+	An interesting observation after implementing this simple rasterization approach to draw triangles was the presence of rendering artifacts, like jaggies and visual gaps in the image render.
+	Intuitively jaggies were inevitable given the coarse decision to either completely fill or not fill a pixel with a color.
+	This causes very jagged edges for the rendered images.
+	<br>
+	<div align="middle">
+		<table style="width=100%">
+		  <tr>
+			<td>
+			  <img src="img/task1/overall-jaggies.png" align="middle" width="400px"/>
+			  <figcaption align="middle">Default viewing parameters.<br>Jaggies present at edges.</figcaption>
+			</td>
+			<td>
+			  <img src="img/task1/red-tri-right-sample1.png" align="middle" width="400px"/>
+			  <figcaption align="middle">Interesting part of scene.<br>Rendering artifacts present.<br></figcaption>
+			</td>
+		  </tr>
+		</table>
+	</div>
+</p>
+
+<br>
+
+<h3>Task 2: Antialiasing by supersampling</h3>
+<p>
+	In this task, I implemented antialiasing via supersampling in order to reduce and mitigate the rendering artifacts of jaggies and pixel gaps as seen in the previous task.
+	Supersampling will divide a given pixel into smaller <code>n &times; n</code> subregions (where <code>n</code> is the <code>sqrt(sample_rate)</code>) to obtain more sample points for a given pixel, whose values will be averaged down to obtain a new value for the pixel.
+	In other words, supersampling will rasterize an image as a high-res image (this follows intuitively given the increase in sample points) and then downsample the higher resolution image to the respective output resolution controlled by the framebuffer.
+	<br><br>
+	In order to implement supersampling, I increased the size of the sample buffer by the sample rate in <code>set_sample_rate</code>, <code>set_framebuffer_target</code>, and <code>RasterizerImp</code>.
+	Additionally, I added another double for-loop to iterate over the smaller <code>n &times; n</code> subregion for a pixel and obtain sample points. 
+	It is worth noting that these sample points still conform to the convention used in Task 1, which was to sample the center of the pixel.
+	In the case of obtaining sample points for the subregions, the sample point is at the center of each subregion.
+	Finally, the <code>resolve_to_framebuffer</code> method was updated to handle averaging down the <code>n &times; n</code> grid of sample values that are related to each output pixel.
+	<br><br>
+	Given this approach to supporting supersampling and since lines and points are not supersampled, the <code>rasterize_point</code> method had to be updated to fill all the supersamples corresponding to a given point. 
+	By fixing this, the <code>rasterize_line</code> method's functionality was also restored since it relies on <code>rasterize_point</code>.
+</p>
+<p>
+	The effects of supersampling is evident when comparing the different sample rates on <i>svg/basic/test4.svg</i>:
+</p>
+<div align="middle">
+	<table style="width=100%">
+	  <tr>
+		<td>
+		  <img src="img/task2/overall-jaggies.png" align="middle" width="400px"/>
+		  <figcaption align="middle">Jaggies present at edges.<br>Sample rate: 1</figcaption>
+		</td>
+		<td>
+		  <img src="img/task2/overall-better.png" align="middle" width="400px"/>
+		  <figcaption align="middle">Smooth edges for all triangles.<br>Sample rate: 16</figcaption>
+		</td>
+	  </tr>
+	</table>
+</div>
+<br><br>
+<p>
+	In order to better understand the role that supersampling plays in the rendering of <i>svg/basic/test4.svg</i>, the following images focus on the red triangle's right vertex's rendering artifacts (jaggies and visible gaps) and showcase how supersampling is able to eliminate them.
+</p>
+<br>
+<div align="middle">
+	<table style="width=100%">
+	  <tr>
+		<td>
+		  <img src="img/task2/red-tri-right-sample1.png" align="middle" width="300px"/>
+		  <figcaption align="middle">Right vertex of red triangle.<br>Sample rate: 1</figcaption>
+		</td>
+		<td>
+		  <img src="img/task2/red-tri-right-sample4.png" align="middle" width="300px"/>
+		  <figcaption align="middle">Right vertex of red triangle.<br>Sample rate: 4</figcaption>
+		</td>
+		<td>
+			<img src="img/task2/red-tri-right-sample16.png" align="middle" width="300px"/>
+			<figcaption align="middle">Right vertex of red triangle.<br>Sample rate: 16</figcaption>
+		</td>
+	  </tr>
+	</table>
+</div>
+
+<br>
+
+<h3>Task 3: Transforms</h3>
+<p>
+	This task involved implementing the parameterized matrices for common transforms (translate, scale, rotate) as seen during lecture.
+	After a successful implementation of the three transforms, the robot was rendered and properly created.
+</p>
+<br>
+<div align="middle">
+	<img src="img/task3/original-robot.png" align="middle" width="800px"/>
+	<figcaption align="middle"><i>svg/transforms/robot.svg</i></figcaption>
+</div>
+<br><br>
+<p>
+	I wanted to create a robot that was more interesting and decided to make one as a miner celebrating after finding gold! 
+	I added a few new polygons and applied the three implemented transforms in order to change the orientation of the robot's legs and arms (applied rotations), add a miner's hat (applied translations, rotations, and scaling), and place a pickaxe in its hand (applied translation, rotations, and scaling).
+	I also played around with the colors in order to make the image more entertaining.
+</p>
+<br>
+<div align="middle">
+	<img src="img/task3/miner-robot.png" align="middle" width="800px"/>
+	<figcaption align="middle">Updated robot.</figcaption>
+</div>
+
+<br>
+
+<h2>Section II: Sampling and Texture Mapping</h2>
+
+<h3>Task 4: Barycentric Coordinates</h3>
+<p>
+	Barycentric coordinates is a coordinate system that is used to identify and express points within a triangle as a linear combination of the triangle's three vertices: <code> pt_in_triangle = &alpha;vertexA + &beta;vertexB + &gamma;vertexC</code> (i.e. weighting each of vertex) where <code>&gamma; = 1 - &alpha; - &beta;</code>.
+</p>
+<br><br>
+<div align="middle">
+	<img src="img/task4/tri-gradient.png" align="middle" width="400px"/>
+	<figcaption align="middle">Gradient Triangle</figcaption>
+</div>
+<br><br>
+<p>
+	To illustrate this definition, I created an svg where each triangle vertex is a distinct color (the left vertex is red, the top vertex is blue, and the right vertex is green) and the remaining points within the triangle are the result of applying barycentric coordinates. 
+	Barycentric coordinates will linearly interpolate each vertex's value in order to identify the value at a given point within the triangle, which will create a color gradient. In other words, three "weights" are calculated as described above: <code>&alpha;, &beta;, &gamma;</code> (one for each vertex). 
+	<br><br>
+	I created a helper method <code>calculate_barycentric_coords</code> to compute these weights by calculating proportional distances. This approach to solving for the weights was convenient since I could leverage the <code>line_test_pt</code> method I implemented earlier. 
+	Intuitively, each weight corresponds to how strong the influence of a respective vertex is.
+	For example, the pixels closer to the left vertex are more red (heavier influence from left vertex) than pixels near the top and the pixels near the center of the triangle are a combination of all three colors.
+</p>
+<p>
+	In this task, barycentric coordinates are seen in action in the rendering of the following color wheel:
+</p>
+<div align="middle">
+	<img src="img/task4/color-wheel.png" align="middle" width="400px"/>
+	<figcaption align="middle"><i>svg/basic/test7.svg</i></figcaption>
+</div>
+
+<br>
+
+<h3>Task 5: "Pixel sampling" for texture mapping</h3>
+
+<br>
+
+<h3>Task 6: "Level sampling" with mipmaps for texture mapping</h3>
+
+</body>
 </html>
