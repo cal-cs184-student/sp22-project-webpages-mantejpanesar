@@ -91,7 +91,8 @@
 <p>
 	In this task, I implemented antialiasing via supersampling in order to reduce and mitigate the rendering artifacts of jaggies and pixel gaps as seen in the previous task.
 	Supersampling will divide a given pixel into smaller <code>n &times; n</code> subregions (where <code>n</code> is the <code>sqrt(sample_rate)</code>) to obtain more sample points for a given pixel, whose values will be averaged down to obtain a new value for the pixel.
-	In other words, supersampling will rasterize an image as a high-res image (this follows intuitively given the increase in sample points) and then downsample the higher resolution image to the respective output resolution controlled by the framebuffer.
+	In other words, supersampling will rasterize an image as a high resolution image (this follows intuitively given the increase in sample points) and then downsample the higher resolution image to the respective output resolution controlled by the framebuffer.
+	Supersampling is useful because by rendering the image at a higher resolution and then downsampling the image will reduce artifacts such as jaggies and very sharp edges, which ultimately results in smooth edges.
 	<br><br>
 	In order to implement supersampling, I increased the size of the sample buffer by the sample rate in <code>set_sample_rate</code>, <code>set_framebuffer_target</code>, and <code>RasterizerImp</code>.
 	Additionally, I added another double for-loop to iterate over the smaller <code>n &times; n</code> subregion for a pixel and obtain sample points. 
@@ -101,6 +102,10 @@
 	<br><br>
 	Given this approach to supporting supersampling and since lines and points are not supersampled, the <code>rasterize_point</code> method had to be updated to fill all the supersamples corresponding to a given point. 
 	By fixing this, the <code>rasterize_line</code> method's functionality was also restored since it relies on <code>rasterize_point</code>.
+	<br><br> 
+	After implementing supersampling, triangles were successfully antialiased because now there was a more granular approach to determining the coloring for a pixel based on the increased number of sample points.
+	Before supersampling the edges of triangles were very sharp and drastic in terms coloring and presence of jaggies and missing pixels, however, now each pixel's color value is the average of the value across each subregion within the pixel.
+	This distinction improves how edges are able to be rendered by accounting for the fact parts of a pixel may lie outside of a triangle, and by supersampling (treating the image as high resolution) these nuances were accounted for during the downsampling in order to generate smooth defined edges.
 </p>
 <p>
 	The effects of supersampling is evident when comparing the different sample rates on <i>svg/basic/test4.svg</i>:
@@ -142,6 +147,18 @@
 	  </tr>
 	</table>
 </div>
+<p>
+	The left image showcases the right vertex of the red triangle with a sample rate of 1, which does not apply supersampling. 
+	In this image the corner of this triangle is very skinny which in turn means that an entire pixel does not completely fit within this part of the triangle, however, in the absence of supersampling the entire pixel would be filled in if the sample point was in the triangle or not filled in if the sample point lie outside the triangle. 
+	This explains why there are harsh, jagged edges and even some pixels which are not filled in.
+	<br><br>
+	The middle image increases the sample rate to 4 which means that each pixel is divided into a <code>2 &times; 2</code> subregion, meaning that now instead of 1 sample point for the pixel, there will be 4 sample points which will be evaluated and used to determine the final value assigned to the pixel.
+	The jaggies and missing colored pixels have been reduced because the image was treated as higher resolution, which can be interpreted as taking a finer grain approach to understanding what parts and how much of the pixel lies within the skinny component of the triangle.
+	<br><br>
+	The right image increases the sample rate to 16 which means that each pixel is divided into a <code>4 &times; 4</code> subregion. 
+	As explained for the middle image, an increase in the sample rate will increase the resolution at which the image will be rendered.
+	Ultimately, it is visually evident that this image does the best at removing the rendering artifacts discussed above.
+</p>
 
 <br>
 
@@ -204,6 +221,9 @@
 <br>
 
 <h3>Task 6: "Level sampling" with mipmaps for texture mapping</h3>
+
+<h2>Project Webpage Link</h2>
+<p><a href="https://cal-cs184-student.github.io/sp22-project-webpages-mantejpanesar/proj1/index.html">Project 1 Webpage</a></p>
 
 </body>
 </html>
