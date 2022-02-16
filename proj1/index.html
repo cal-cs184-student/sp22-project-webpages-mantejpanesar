@@ -74,11 +74,11 @@
 		  <tr>
 			<td>
 			  <img src="img/task1/overall-jaggies.png" align="middle" width="400px"/>
-			  <figcaption align="middle">Default viewing parameters.<br>Jaggies present at edges.</figcaption>
+			  <figcaption align="middle">Default viewing parameters.<br>Jaggies present at edges.<br><i>svg/basic/test4.svg</i></figcaption>
 			</td>
 			<td>
 			  <img src="img/task1/red-tri-right-sample1.png" align="middle" width="400px"/>
-			  <figcaption align="middle">Interesting part of scene.<br>Rendering artifacts present.<br></figcaption>
+			  <figcaption align="middle">Interesting part of scene.<br>Rendering artifacts present.<br><i>svg/basic/test4.svg</i></figcaption>
 			</td>
 		  </tr>
 		</table>
@@ -170,7 +170,7 @@
 <br>
 <div align="middle">
 	<img src="img/task3/original-robot.png" align="middle" width="800px"/>
-	<figcaption align="middle"><i>svg/transforms/robot.svg</i></figcaption>
+	<figcaption align="middle">Original robot.<i>svg/transforms/robot.svg</i></figcaption>
 </div>
 <br><br>
 <p>
@@ -181,7 +181,7 @@
 <br>
 <div align="middle">
 	<img src="img/task3/miner-robot.png" align="middle" width="800px"/>
-	<figcaption align="middle">Updated robot.</figcaption>
+	<figcaption align="middle">Updated robot.<br><i>docs/my_robot.svg</i></figcaption>
 </div>
 
 <br>
@@ -195,7 +195,7 @@
 <br><br>
 <div align="middle">
 	<img src="img/task4/tri-gradient.png" align="middle" width="400px"/>
-	<figcaption align="middle">Gradient Triangle</figcaption>
+	<figcaption align="middle">Gradient Triangle.<br><i>docs/gradient_triangle.svg</i></figcaption>
 </div>
 <br><br>
 <p>
@@ -211,7 +211,7 @@
 </p>
 <div align="middle">
 	<img src="img/task4/color-wheel.png" align="middle" width="400px"/>
-	<figcaption align="middle"><i>svg/basic/test7.svg</i></figcaption>
+	<figcaption align="middle">Color Wheel.<br><i>svg/basic/test7.svg</i></figcaption>
 </div>
 
 <br>
@@ -232,7 +232,7 @@
 	This was accomplished by taking the floor and ceiling of the texture coordinate's values and then clamping the values in order to ensure that they lie within the boundary of the texture image.
 	Finally, the four closest texels are linearly interpolated to determine how the screen space pixel should be colored given the texture.
 	<br><br>
-	The following images highlight the differences between nearest and bilinear pixel sampling:
+	The following images of <i>svg/texmap/test5.svg</i> highlight the differences between nearest and bilinear pixel sampling:
 <div align="middle">
 	<table style="width=100%">
 	  <tr>
@@ -270,10 +270,79 @@ When the sample rate is 16, the same behavior holds as with lower sample rates: 
 <br>
 <br>
 More generally, there will be a large difference between bilinear and nearest pixel sampling when there are varying colors across edges or on curves.
-Nearest pixel sampling would simply use the nearest texel's color which would result in abrupt color shifts and jagged edges, whereas bilinear pixel sampling will use the linear interpolation of the 4 closest texels in order to generate smoother coloring and less jagged edges.
+Nearest pixel sampling would simply use the nearest texel's color which would result in abrupt color shifts and jagged edges, whereas bilinear pixel sampling will use the linear interpolation of the 4 closest texels in order to generate smoother coloring and less jagged edges (i.e. bilinear pixel sampling will utilize more information regarding the texture to properly render the image).
 <br>
 <br>
 <h3>Task 6: "Level sampling" with mipmaps for texture mapping</h3>
+<p>
+	In this task, I implemented level sampling to leverage mipmaps for texture mapping. 
+	When sampling and rendering, textures pixels are cross referenced with the texture space and accordingly filled in (seen in Task 5), and level sampling builds upon this notion to provide varying resolution images for the texture.
+	In particular, the varying resolution levels are stored within a mipmap. The lowest level (level 0) will correspond to the highest resolution and each successive level will decrease in resolution.
+	Utilizing a mipmap and the varying levels provides more control over choosing values from varying texture resolutions which helps reduce rendering artifacts and perform antialiasing.
+	For example, an image may contain a low frequency component which would be best colored according to a lower resolution version of the texture.
+	In contrast, an image can also contain a very high frequency component would would benefit from being colored according to a higher resolution of the texture.
+	<br><br>
+	Specifically, I implemented two level sampling methods: nearest and bilinear. 
+	First, I computed the barycentric coordinates of three pixel space points: <code>(x, y)</code>, <code>(x + 1, y)</code>, and <code>(x, y + 1)</code>.
+	Using the barycentric coordinates, I mapped the respective pixel space points into <code>(u, v)</code> coordinates and scaled the coordinates accordingly to ensure proper indexing into the texture space (this is the sample approach done in Task 5).
+	Using these texture space coordinates, I computed the mipmap level <code>D</code> where <code> D = log<sub>2</sub>L</code> and <code>L = max(sqrt((du/dx)<sup>2</sup> + (dv/dx)<sup>2</sup>), sqrt((du/dy)<sup>2</sup> + (dv/dy)<sup>2</sup>))</code>.
+	Now depending on the level sampling method used, the mipmap level <code>D</code> will be used differently.
+	<br>
+	<br>
+	For nearest level sampling, the mipmap level <code>D</code> is rounded to the nearest integer value and then clamped to be within the mipmap level boundaries. This new value for the level that is used to index into the mipmap to retreive the texel at the texture coordinates calculated earlier.
+	<br>
+	<br>
+	For bilinear level sampling, the two adjacent integer mipmap levels are determined by taking the floor and ceiling of the mipmap level <code>D</code> (i.e. find the integer mipmap levels <code>D</code> and <code>D + 1</code>). 
+	These levels are then clamped to be within the mipmap level boundaries. Now, two samples are performed -- one on mipmap level <code>D</code> and one on mipmap level <code>D+1</code> and their results are linearly interpolated given the residuals between the continuous value <code>D</code> and the integer levels computed by taking the floor and ceiling.
+	<br>
+	<br>
+	Now, the different techniques implemented throughout this project can be compared against each other. 
+	<br><br>
+	The first type of pixel sampling that was implemented is nearest sampling. This is done by taking the texel that is closest to our sample point on the current level. This method is fast since it pulls the nearest texel for the texture and does not involve any additional space. The other form of pixel sampling is a bilinear sampling method. This is achieved by linear interpolating the neighboring points. The speed of this is slower than the nearest sampling method since each sample point requires us to do 4 texel reads, for the neighboring points, and 3 lerps to do the linear interpolation. This has the benefit of achieving antialiasing since it interpolates the texture by its neighbors which will reduce the amount of artifacts in the image.
+	<br><br>
+	The first type of level sampling is zero sampling where level 0 of the mipmap is used. In this case, the base mipmap is being used before running the pixel sampling technique chosen. As such the runtime of this is dependent on the pixel sampling technique that is chosen and the effects of antialiasing come from the pixel sampling technique. The next version of level sampling is nearest level sampling. In order to do this the <code>get_level</code> method in order to retrieve the nearest texture level. After getting the nearest level we run whichever pixel sampling method chosen. This method increases antialiasing since we are going to use the level nearest to the image in screen space, and attempt to do filtering before we actually sample the point, on top of whatever antialiasing occurs from the pixel sampling method chosen. The final type that we implemented is a linear level sampling. To do this we linearly interpolate between the results of two mipmaps. The two mipmaps that we choose are the two nearest to the level we calculate. Since the level calculated is a float, we take the floor and ceiling of this float as the two different mipmaps. With these two mipmaps we run two separate pixel sampling methods. As such, this means that we are going to double any of the pixel sampling work that we do. After getting a sample result from each of these levels we lerp the two together. This is done in order to weigh each of the samples according to how close the low and high levels are to the original level. This will increase antialiasing since we linearly interpolate between the two sample results in order to reduce the amount of artifacts in the final sample. In order to achieve level sampling we need to store multiple different mipmap levels, increasing our space complexity. This is due to the fact that we want to access them if we use the nearest and linear sampling methods. Overall, level sampling helps to reduce aliasing by filtering out higher frequencies before we take samples.
+	<br><br>
+	Another way to reduce artifacts is by supersampling. This is achieved by taking a sample point and breaking it into smaller pieces that is averaged over in order to create an averaged sample for the pixel. By doing this we attempt to smoothen out the artifacts that may occur if we just sample directly. Unlike the other two methods, point and level sampling, supersampling does not attempt to filter out high frequency points before sampling. This method’s run time depends on the number of samples we want per pixel and the size of the image. If an image is large and wants a large number of samples the run time will significantly increase since we are going to have to supersample per pixel in the original image. In terms of space complexity, this method requires us to store the additional samples that we take into the sample buffer, a step that the other two methods do not do.
+	<br>
+	<br>
+	Ultimately, pixel sampling's effectiveness and cost will depend on which type is used. Nearest pixel sampling will be faster than bilinear pixel sampling, but bilinear pixel sampling will perform better at reducing rendering artifacts.
+	Due to level sampling storing precomputed mipmaps, this approach can be fast, however, it requires a significant amount of storage when compared against the other techniques. Finally, supersampling is successful at reducing rendering artifacts by increasing the number of samples taken per pixel, however, it is vital to understand that the larger the sample rate the more computation will be performed.
+	<br>
+	<br>
+	The following images (<i>docs/oski.svg</i>) showcase a picture of using Oski as the texture image (<i>docs/oski.png</i>) at various level and pixel sampling options.
+	In particular the various images showcase the difference in edge smoothness and coloring (i.e. smooth color transitions versus abrupt jumps).
+	<div align="middle">
+		<table style="width=100%">
+		  <tr>
+			<td>
+			  <img src="img/task6/L_zero_P_nearest.png" align="middle" width="400px"/>
+			  <figcaption align="middle">L = zero, P = nearest.</figcaption>
+			</td>
+			<td>
+				<img src="img/task6/L_zero_P_linear.png" align="middle" width="400px"/>
+				<figcaption align="middle">L = zero, P = linear.</figcaption>
+			</td>
+		  </tr>
+		</table>
+	</div>
+	<br><br>
+	<div align="middle">
+		<table style="width=100%">
+		  <tr>
+			<td>
+				<img src="img/task6/L_nearest_P_nearest.png" align="middle" width="400px"/>
+				<figcaption align="middle">L = nearest, P = nearest.</figcaption>
+			</td>
+			<td>
+				<img src="img/task6/L_nearest_P_linear.png" align="middle" width="400px"/>
+				<figcaption align="middle">L = nearest, P = linear.</figcaption>
+			</td>
+		  </tr>
+		</table>
+	</div>
+</p>
+<br>
+<br>
 
 <h2>Project Webpage Link</h2>
 <p>
