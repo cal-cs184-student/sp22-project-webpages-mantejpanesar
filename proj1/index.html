@@ -25,7 +25,7 @@
 
 <h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2022</h1>
 <h1 align="middle">Project 1: Rasterizer</h1>
-<h2 align="middle">Mantej Panesar</h2>
+<h2 align="middle">Mantej Panesar, Sean Sananikone</h2>
 
 <br><br>
 
@@ -217,13 +217,71 @@
 <br>
 
 <h3>Task 5: "Pixel sampling" for texture mapping</h3>
-
+<p>
+	At a high level, pixel sampling is a method by which triangles are colored by mapping its screen space pixels to the texture space to obtain the respective colors to render the texture.
+	In this task, I leveraged barycentric coordinates to perform pixel sampling in order to color pixels according to a provided texture image.
+	First, given each sample point in the screen space, I computed its barycentric coordinates by invoking <code>calculate_barycentric_coords</code>.
+	Since barycentric coordinates are preserved across transformations, the computed weights <code>&alpha;, &beta;, &gamma;</code> are used to linearly interpolate the <code>(u, v)</code> coordinates provided in order to map the screen space pixels to the texture space.
+	It is important to note that since barycentric coordinates lie within <code>[0, 1]</code>, the obtained <code>(u, v)</code> coordinate needs to be scaled by the texture space dimensions in order to properly index into the texture space.
+	Now given that a texel coordinate has been established, invoking <code>get_texel</code> will return the color corresponding to the texture coordinate, which will then be used to color the screen space pixel when rendering.
+	<br>
+	<br>
+	As part of this task, two types of pixel sampling were implemented: nearest and bilinear. The nearest pixel sampling method will obtain the nearest texel to the scaled <code>(u, v)</code> coordinate discussed above.
+	This was accomplished by rounding the coordinate's values and then clamping the values in order to ensure that it lies within the boundary of the texture image. 
+	The bilinear pixel sampling method will linearly interpolate the four closest, adjacent texels given the scaled <code>(u, v)</code> coordinate discussed above.
+	This was accomplished by taking the floor and ceiling of the texture coordinate's values and then clamping the values in order to ensure that they lie within the boundary of the texture image.
+	Finally, the four closest texels are linearly interpolated to determine how the screen space pixel should be colored given the texture.
+	<br><br>
+	The following images highlight the differences between nearest and bilinear pixel sampling:
+<div align="middle">
+	<table style="width=100%">
+	  <tr>
+		<td>
+		  <img src="img/task5/nearest-1.png" align="middle" width="400px"/>
+		  <figcaption align="middle">Nearest Pixel Sampling.<br>Sample rate: 1</figcaption>
+		</td>
+		<td>
+			<img src="img/task5/nearest-16.png" align="middle" width="400px"/>
+			<figcaption align="middle">Nearest Pixel Sampling.<br>Sample rate: 16</figcaption>
+		</td>
+	  </tr>
+	</table>
+</div>
+<br><br>
+<div align="middle">
+	<table style="width=100%">
+	  <tr>
+		<td>
+		  <img src="img/task5/bilinear-1.png" align="middle" width="400px"/>
+		  <figcaption align="middle">Bilinear Pixel Sampling.<br>Sample rate: 1</figcaption>
+		</td>
+		<td>
+			<img src="img/task5/bilinear-16.png" align="middle" width="400px"/>
+			<figcaption align="middle">Bilinear Pixel Sampling.<br>Sample rate: 16</figcaption>
+		</td>
+	  </tr>
+	</table>
+</div>
+</p>
 <br>
-
+It is evident that the bilinear pixel sampling defeats pixel sampling. 
+When the sample rate is 1, using bilinear pixel sampling has noticeably smoother edges and gradual coloring (no harsh jumps in pixel colors) of the UC Berkeley seal, whereas in the nearest pixel sampling there are very abrupt jaggies and color jumps in the different shades of blue and gold.
+When the sample rate is 16, the same behavior holds as with lower sample rates: bilinear pixel sampling creates smoother curves, edges, and coloring, whereas nearest pixel still struggles with jaggies and abrupt color changes (see the top right corner of the magnified image -- in particular the blue pixels).
+<br>
+<br>
+More generally, there will be a large difference between bilinear and nearest pixel sampling when there are varying colors across edges or on curves.
+Nearest pixel sampling would simply use the nearest texel's color which would result in abrupt color shifts and jagged edges, whereas bilinear pixel sampling will use the linear interpolation of the 4 closest texels in order to generate smoother coloring and less jagged edges.
+<br>
+<br>
 <h3>Task 6: "Level sampling" with mipmaps for texture mapping</h3>
 
 <h2>Project Webpage Link</h2>
-<p><a href="https://cal-cs184-student.github.io/sp22-project-webpages-mantejpanesar/proj1/index.html">Project 1 Webpage</a></p>
+<p>
+	<a href="https://cal-cs184-student.github.io/sp22-project-webpages-mantejpanesar/proj1/index.html">Project 1 Webpage</a>
+	<br>
+	<br>
+	https://cal-cs184-student.github.io/sp22-project-webpages-mantejpanesar/proj1/index.html
+</p>
 
 </body>
 </html>
