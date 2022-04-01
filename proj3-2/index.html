@@ -1,7 +1,223 @@
-<html>
-	<head>
-	</head>
-	<body>
-		Project 3-2 here
-	</body>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<style>
+  body {
+    padding: 100px;
+    width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+</style>
+<title>CS 184 Pathtracer 2</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+<body>
+<h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2022</h1>
+<h1 align="middle">Project 3-2: Pathtracer 2</h1>
+<h2 align="middle">Mantej Panesar, Sean Sananikone</h2>
+
+<br>
+
+<h2 align="middle">Overview</h2>
+<p>
+	In this project, I extended the functionality from Project 3-1 to be able to render different types of materials.
+	Specifically, I implemented the mirror and glass materials (Part 1) and microfacet materials (Part 2).
+	While implementing this project, I ran into issues regarding large amounts of noise in the image renders, which was attributed to casting errors (I updated my implementation to ensure floats were being used) and mathematical mistakes.
+	For example, I initially did not provide safegaurd checks to ensure that my implementation avoided divisions by 0 and I initially did not use the absolute value of the cosine value obtained. 
+	Overall, the implementation for this project was majorly bug-free since I utilized the staff binaries from Project 3-1 when working on this project.
+
+	This project was pretty fun to implement because now the pathtracer is able to render a wide variety of scenes and materials!
+</p>
+<br>
+<h2 align="middle">Part 1: Mirror and Glass Materials</h2>
+<p>
+	In this part, I implemented mirror and glass materials by modifying the following functions according to the spec:
+	<ul>
+		<li><code>BSDF::reflect(...)</code></li>
+		<li><code>MirrorBSDF::sample_f(...)</code></li>
+		<li><code>BSDF::refract(...)</code></li>
+		<li><code>RefractionBSDF::sample_f(...)</code></li>
+		<li><code>GlassBSDF::sample_f(...)</code></li>
+	</ul>
+</p>
+<p>
+	The following images showcase <i>CBspheres.dae</i> rendered with varying <code>max_ray_depth</code> values.
+</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+    <td>
+      <img src="img/part1/spheres_1024_4_0.png" align="middle" width="400px"/>
+      <figcaption align="middle"><i>CBspheres.dae</i><br><code>-s 1024 -l 4 -m 0</code></figcaption>
+    </td>
+	<td>
+		<img src="img/part1/spheres_1024_4_1.png" align="middle" width="400px"/>
+		<figcaption align="middle"><i>CBspheres.dae</i><br><code>-s 1024 -l 4 -m 1</code></figcaption>
+	  </td>
+    </tr>
+	<br>
+	<tr>
+		<td>
+		  <img src="img/part1/spheres_1024_4_2.png" align="middle" width="400px"/>
+		  <figcaption align="middle"><i>CBspheres.dae</i><br><code>-s 1024 -l 4 -m 2</code></figcaption>
+		</td>
+		<td>
+			<img src="img/part1/spheres_1024_4_3.png" align="middle" width="400px"/>
+			<figcaption align="middle"><i>CBspheres.dae</i><br><code>-s 1024 -l 4 -m 3</code></figcaption>
+		  </td>
+		</tr>
+		<br>
+		<tr>
+			<td>
+			  <img src="img/part1/spheres_1024_4_4.png" align="middle" width="400px"/>
+			  <figcaption align="middle"><i>CBspheres.dae</i><br><code>-s 1024 -l 4 -m 4</code></figcaption>
+			</td>
+			<td>
+				<img src="img/part1/spheres_1024_4_5.png" align="middle" width="400px"/>
+				<figcaption align="middle"><i>CBspheres.dae</i><br><code>-s 1024 -l 4 -m 5</code></figcaption>
+			  </td>
+			</tr>
+  </table>
+</div>
+<div align="middle">
+	<img src="img/part1/spheres_1024_4_100.png" align="middle" width="400px"/>
+	<figcaption align="middle"><i>CBspheres.dae</i><br><code>-s 1024 -l 4 -m 100</code></figcaption>
+</div>
+<p>
+	When <code>m = 0</code> the only the top light is shown in the render. Since we are only using 0 bounces, there is no light that is bouncing off the room's surfaces (walls and spheres) towards the camera.
+	When <code>m = 1</code> the top light, walls, and ground are lit up. The spheres are still black, however, there is light glares on the top of both spheres. This behavior is expected because we are only considering 1 bounce between the light source and the camera (there are no indirect lighting being considered).
+	When <code>m = 2</code> the top light, walls, ceiling, and ground are lit up. The back sphere's surface now appears as its expected reflective material, however, the front sphere remains largely dark with slight hints of color. This behavior is expected because we are considering 2 bounces between the light source and the camera (now indirect lighting is being considered).
+	Additionally, the shadows have become softer when compared to the previous render.
+	When <code>m = 3</code> the top light, walls, ceiling, ground, and spheres are lit up. In particular, the shadows are softer and the front sphere is brighter and showcases some refractive elements (bottom of the sphere).
+	When <code>m = 4</code> the top light, walls, ceiling, ground, and spheres are lit up. In particular, the shadows are softer and the front sphere is brighter and showcases some refractive elements (bottom of the sphere). Additionally, there is a new lighting effect on the right wall (bottom of blue wall).
+	When <code>m = 5</code> the top light, walls, ceiling, ground, and spheres are lit up. In particular, the shadows are softer and the front sphere is brighter and showcases some refractive elements (bottom of the sphere and bottom of blue wall). Overall, the render became clearer and smoother overall.
+	When <code>m = 100</code> there is very little difference between the previous render because the contribution of reflective and refractive elements will become more negligible as the ray depth continues to increase (the main differences will plateau).
+</p>
+<br>
+<h2 align="middle">Part 2: Microfacet Material</h2>
+<p>
+	In this part, I extended the functionality from Project 3-1 to support microfacet materials.
+	Now, various other materials can be rendered in addition to the original diffuse materials from the previous project.
+	I implemented the following functions according to the spec:
+	<ul>
+		<li><code>MicrofacetBSDF::f(...)</code></li>
+		<li><code>MicrofacetBSDF::D(...)</code></li>
+		<li><code>MicrofacetBSDF::F(...)</code></li>
+		<li><code>MicrofacetBSDF::sample_f(...)</code></li>
+	</ul>
+</p>
+<br>
+<p>
+	The following images show <i>CBdragon_microfacet_au.dae</i> rendered with varying <code>&alpha;</code> values.
+</p>
+<div align="middle">
+	<table style="width=100%">
+	  <tr>
+	  <td>
+		<img src="img/part2/dragon/dragon_gold_1024_1_5_0.005.png" align="middle" width="400px"/>
+		<figcaption align="middle"><i>CBdragon_microfacet_au.dae</i><br><code>-s 1024 -l 1 -m 5</code><br><code>&alpha; = 0.005</code></figcaption>
+	  </td>
+	  <td>
+		<img src="img/part2/dragon/dragon_gold_1024_1_5_0.05.png" align="middle" width="400px"/>
+		<figcaption align="middle"><i>CBdragon_microfacet_au.dae</i><br><code>-s 1024 -l 1 -m 5</code><br><code>&alpha; = 0.05</code></figcaption>
+	  </td>
+	  </tr>
+	  <br>
+	  <tr>
+		<td>
+		  <img src="img/part2/dragon/dragon_gold_1024_1_5_0.25.png" align="middle" width="400px"/>
+		  <figcaption align="middle"><i>CBdragon_microfacet_au.dae</i><br><code>-s 1024 -l 1 -m 5</code><br><code>&alpha; = 0.25</code></figcaption>
+		</td>
+		<td>
+		  <img src="img/part2/dragon/dragon_gold_1024_1_5_0.5.png" align="middle" width="400px"/>
+		  <figcaption align="middle"><i>CBdragon_microfacet_au.dae</i><br><code>-s 1024 -l 1 -m 5</code><br><code>&alpha; = 0.5</code></figcaption>
+		</td>
+		</tr>
+	</table>
+  </div>
+  <p>
+	Smaller values of <code>&alpha;</code> result in a smoother surface, whereas increasing it will create a rougher microfacet material. 
+	As seen in the rendered images, increasing the roughness yielded a clearer, better textured, and brighter dragon.
+	This behavior is due to the fact that microfacet materials reflect light according to the normals of each "microfacet" on the surface.
+	Increasing the roughness will increase variation of the microfacet material, which creates more individual components on the surface, whereas a lower roughness value would mean less variation and less components on the surface (i.e. smoother surface).
+	Therefore, increasing <code>&alpha;</code> resulted in more variance of the material which allowed for the texture (the bumps on the dragon's neck and body) to render better and allowed for a brighter image since more individual "microfacet" surfaces will each reflect light of their own.
+	Overall, small <code>&alpha;</code> values yield glossy renders and large <code>&alpha;</code> yield diffuse renders.
+  </p>
+  <br>
+  <p>
+	  The following images show <i>CBbunny_microfacet_cu.dae</i> rendered with cosine hemisphere sampling and importance sampling.
+  </p>
+  <div align="middle">
+	<table style="width=100%">
+	  <tr>
+	  <td>
+		<img src="img/part2/bunny/bunny_copper_64_1_5_cosine_hemisphere.png" align="middle" width="400px"/>
+		<figcaption align="middle">Cosine Hemisphere Sampling<br><i>CBbunny_microfacet_cu.dae</i><br><code>-s 64 -l 1 -m 5</code></figcaption>
+	  </td>
+	  <td>
+		<img src="img/part2/bunny/bunny_copper_64_1_5_importance.png" align="middle" width="400px"/>
+		<figcaption align="middle">Importance Sampling<br><i>CBbunny_microfacet_cu.dae</i><br><code>-s 64 -l 1 -m 5</code></figcaption>
+	  </td>
+	  </tr>
+	</table>
+  </div>
+  <p>
+	  Using cosine hemisphere sampling (this was the default implementation) resulted in a noiser and darker image, specifically the rendering of the bunny's material, when compared to the importance sampling render.
+	  The stark difference in the two renders can be attributed to the fact that cosine hemisphere sampling makes the assumption that light is reflected uniformly, however, it is worth noting that each "microfacet" of a microfacet material will reflect light based on their normals, which is why the importance sampling render contains less noise and is not as dark on the bunny's material.
+	  In particular, my importance sampling implementation uses the Beckmann NDF, which will accordingly defines the <code>*pdf</code> while considering sampled normals (as discussed above) of the microfacet material.
+  </p>
+  <br>
+  <p>
+	  The following images show <i>CBdragon_microfacet</i> rendered with varying conductor values (<code>&eta;</code> and <code>k</code>).
+	  I referenced https://refractiveindex.info/ to obtain valid <code>&eta;</code> and <code>k</code> for different conductor materials.
+  </p>
+  <div align="middle">
+	<table style="width=100%">
+	  <tr>
+	  <td>
+		<img src="img/part2/custom/dragon_custom_lead_1024_1_5.png" align="middle" width="400px"/>
+		<figcaption align="middle">Lead Dragon<br><i>CBdragon_microfacet_custom_lead.dae</i><br><code>-s 1024 -l 1 -m 5</code></figcaption>
+	  </td>
+	  <td>
+		<img src="img/part2/custom/dragon_custom_titanium_1024_1_5.png" align="middle" width="400px"/>
+		<figcaption align="middle">Titanium Dragon<br><i>CBdragon_microfacet_custom_titanium.dae</i><br><code>-s 1024 -l 1 -m 5</code></figcaption>
+	  </td>
+	  </tr>
+	</table>
+  </div>
+  <p>
+	  I used wavelengths 614 nm (red), 549 nm (green) and 466 nm (blue) when obtaining the <code>&eta;</code> and <code>k</code> values for the custom material renders.
+	  The <code>&eta;</code> values for the lead dragon were <code>(1.0132, 0.65850, 0.42092)</code> and the <code>k</code> values were <code>(6.2285, 5.6248, 4.6673)</code>.
+	  The <code>&eta;</code> values for the titanium dragon were <code>(2.6640 2.5400 2.3075)</code> and the <code>k</code> values were <code>(3.7080, 3.4300, 3.0850)</code>.
+  </p>
+<br>
+  <h2 align="middle">Collaboration</h2>
+  <p>
+	  Working with a partner went well. We used the same approach as the previous project, where we assigned each person to be the "lead" on certain tasks.
+	  Additionally, we continued our practice of commenting code/communicating well so that both partners would be on the same page when it comes to the implementation of the code.
+	  In terms of coding, One way that we collaborated was through paired programming. We would work on one person's monitor with that 
+	  individual coding and the other partner helping by checking the specs/slides/piazza as well as helping debug. When we 
+	  didn't do that we would try to split up parts of the work in a divide and conquer fashion. We split up the task of the write-up
+	  by making the individual who worked more on each part write out the explanations. 
+  </p>
+<br>
+  <h2 align="middle">Project Webpage Link</h2>
+<p>
+	<a href="https://cal-cs184-student.github.io/sp22-project-webpages-mantejpanesar/proj3-2/index.html">Project 3-2 Webpage</a>
+	<br>
+	<br>
+	https://cal-cs184-student.github.io/sp22-project-webpages-mantejpanesar/proj3-2/index.html
+</p>
+
+
+</body>
 </html>
