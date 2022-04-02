@@ -31,7 +31,7 @@
 	In this project, I extended the functionality from Project 3-1 to be able to render different types of materials.
 	Specifically, I implemented the mirror and glass materials (Part 1) and microfacet materials (Part 2).
 	While implementing this project, I ran into issues regarding large amounts of noise in the image renders, which was attributed to casting errors (I updated my implementation to ensure floats were being used) and mathematical mistakes.
-	For example, I initially did not provide safegaurd checks to ensure that my implementation avoided divisions by 0 and I initially did not use the absolute value of the cosine value obtained. 
+	For example, I initially did not provide safegaurd checks to ensure that my implementation avoided divisions by 0 (checking if <code>wo</code> and <code>wi</code> were valid) and I initially did not use the absolute value of the cosine value obtained. 
 	Overall, the implementation for this project was majorly bug-free since I utilized the staff binaries from Project 3-1 when working on this project.
 
 	This project was pretty fun to implement because now the pathtracer is able to render a wide variety of scenes and materials!
@@ -94,11 +94,13 @@
 </div>
 <p>
 	When <code>m = 0</code> the only the top light is shown in the render. Since we are only using 0 bounces, there is no light that is bouncing off the room's surfaces (walls and spheres) towards the camera.
-	When <code>m = 1</code> the top light, walls, and ground are lit up. The spheres are still black, however, there is light glares on the top of both spheres. This behavior is expected because we are only considering 1 bounce between the light source and the camera (there are no indirect lighting being considered).
+	When <code>m = 1</code> the top light, walls, and ground are lit up. The spheres are still black, however, there is light glares on the top of both spheres (direct lighting bouncing on the spheres and into the camera). This behavior is expected because we are only considering 1 bounce between the light source and the camera (there is no indirect lighting being considered).
 	When <code>m = 2</code> the top light, walls, ceiling, and ground are lit up. The back sphere's surface now appears as its expected reflective material, however, the front sphere remains largely dark with slight hints of color. This behavior is expected because we are considering 2 bounces between the light source and the camera (now indirect lighting is being considered).
+	This means that light will now bounce from the light source to the environment to the spheres or ceiling and finally towards the camera.
 	Additionally, the shadows have become softer when compared to the previous render.
-	When <code>m = 3</code> the top light, walls, ceiling, ground, and spheres are lit up. In particular, the shadows are softer and the front sphere is brighter and showcases some refractive elements (bottom of the sphere).
-	When <code>m = 4</code> the top light, walls, ceiling, ground, and spheres are lit up. In particular, the shadows are softer and the front sphere is brighter and showcases some refractive elements (bottom of the sphere). Additionally, there is a new lighting effect on the right wall (bottom of blue wall).
+	When <code>m = 3</code> the top light, walls, ceiling, ground, and spheres are lit up. In particular, the shadows are softer and the front sphere is brighter and showcases some refractive elements (bottom of the sphere). Now, with three bounces the reflective sphere's surface shows the colored ceiling in the reflection.
+	When <code>m = 4</code> the top light, walls, ceiling, ground, and spheres are lit up. In particular, the shadows are softer and the front sphere is brighter and showcases some refractive elements (bottom of the sphere). Additionally, there is a new lighting effect from the front sphere on the right wall (bottom of blue wall contains refracted light).
+	This behavior is expected as the front sphere is represented as a glass material, which means now with more bounces, light can bounce within the sphere and then exit the sphere as well.
 	When <code>m = 5</code> the top light, walls, ceiling, ground, and spheres are lit up. In particular, the shadows are softer and the front sphere is brighter and showcases some refractive elements (bottom of the sphere and bottom of blue wall). Overall, the render became clearer and smoother overall.
 	When <code>m = 100</code> there is very little difference between the previous render because the contribution of reflective and refractive elements will become more negligible as the ray depth continues to increase (the main differences will plateau).
 </p>
@@ -106,8 +108,8 @@
 <h2 align="middle">Part 2: Microfacet Material</h2>
 <p>
 	In this part, I extended the functionality from Project 3-1 to support microfacet materials.
-	Now, various other materials can be rendered in addition to the original diffuse materials from the previous project.
-	I implemented the following functions according to the spec:
+	Now, various other materials can be rendered by modifying the corresponding components within the dae files in addition to the original diffuse materials from the previous project.
+	I implemented the following functions according to the spec and referenced the link on the spec to better understand the derivations of the expression used in this part:
 	<ul>
 		<li><code>MicrofacetBSDF::f(...)</code></li>
 		<li><code>MicrofacetBSDF::D(...)</code></li>
@@ -150,7 +152,7 @@
 	This behavior is due to the fact that microfacet materials reflect light according to the normals of each "microfacet" on the surface.
 	Increasing the roughness will increase variation of the microfacet material, which creates more individual components on the surface, whereas a lower roughness value would mean less variation and less components on the surface (i.e. smoother surface).
 	Therefore, increasing <code>&alpha;</code> resulted in more variance of the material which allowed for the texture (the bumps on the dragon's neck and body) to render better and allowed for a brighter image since more individual "microfacet" surfaces will each reflect light of their own.
-	Overall, small <code>&alpha;</code> values yield glossy renders and large <code>&alpha;</code> yield diffuse renders.
+	Overall, small <code>&alpha;</code> values yield glossy renders and large <code>&alpha;</code> yield more diffuse renders.
   </p>
   <br>
   <p>
@@ -173,7 +175,7 @@
   <p>
 	  Using cosine hemisphere sampling (this was the default implementation) resulted in a noiser and darker image, specifically the rendering of the bunny's material, when compared to the importance sampling render.
 	  The stark difference in the two renders can be attributed to the fact that cosine hemisphere sampling makes the assumption that light is reflected uniformly, however, it is worth noting that each "microfacet" of a microfacet material will reflect light based on their normals, which is why the importance sampling render contains less noise and is not as dark on the bunny's material.
-	  In particular, my importance sampling implementation uses the Beckmann NDF, which will accordingly defines the <code>*pdf</code> while considering sampled normals (as discussed above) of the microfacet material.
+	  In particular, my importance sampling implementation uses the Beckmann NDF, which will accordingly define the <code>*pdf</code> while considering sampled normals (as discussed above) of the microfacet material.
   </p>
   <br>
   <p>
