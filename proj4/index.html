@@ -1,7 +1,441 @@
-<html>
-	<head>
-	</head>
-	<body>
-		Project 4 here
-	</body>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<style>
+  body {
+    padding: 100px;
+    width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+</style>
+<title>CS 184 Project 4: Clothsim</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+<body>
+<h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2022</h1>
+<h1 align="middle">Project 4: Clothsim</h1>
+<h2 align="middle">Mantej Panesar, Sean Sananikone</h2>
+
+<br>
+
+<h2 align="middle">Overview</h2>
+<p>
+	In this project, we implemented a real-time simuation of a cloth using a mass and spring system.
+	Specifically, we built the grid containing the masses and springs, applied numerical integration to simulate movement, implemented collisions with itself and other objects (sphere and plane), and various shaders.
+	This project was very interesting to implement because it involved real-time simulation renders, whereas the previous projects were focused on static scene renders.
+	Also, it was interesting to learn more of the technical aspects behind how a given mesh/grid is updated over time to mimic realistic movements.
+</p>
+<br>
+<h2 align="middle">Part 1: Masses and Springs</h2>
+<p>
+	In this part, we implemented the mass and spring based system to represent the cloth by modifying <code>Cloth::buildGrid(...)</code>. 
+	In particular, we first built the cloth with evenly spaced out point masses which spanned the provided height and width for the cloth and stored the point masses in <code>point_masses</code> in row-major order.
+	We also leveraged <code>pinned</code> in order to toggle the boolean indicating whether a point mass should be pinned in the grid or not.
+	Next, we implemented structural, shearing, and bending constraints (as specified on the spec), which are represented by springs, in order to be able to model cloth movements in later parts of the project during simulations.
+	To make the code more readable and concise, we implemented various helper functions. 
+	One of the helper functions was <code>Cloth::isValidGridIndex(...)</code> which would check whether the provided indices were valid given the grid provided. 
+	This was particularly helpful in being able to handle edge cases when adding constraints between a current point mass and surrounding point masses.
+	The remaining helper functions were <code>Cloth::addStructuralSprings(...)</code>, <code>Cloth::addShearingSprings(...)</code>, and <code>Cloth::addBendingSprings(...)</code> would accordingly invoke <code>Cloth:isValidGridIndex(...)</code> and add the respective contraints.
+</p>
+<p>
+	While implementing this part, we ran into two main bugs that caused our implementation to behave erroneously later on in the project.
+	Initially, the grid was not actually being stored in row major order. We were able to identify this error when implementing Part 2, as the normal coloring of the cloth seemed to be inverted.
+	Updating how the grid was stored (flipping the order of our loops and fixing our indexing) resolved the issue and the normal coloring of the cloth in Part 2 adhered to what was expected as seen on the spec.
+	Second, when calculating the random offset for the z-coordinate, we scaled the <code>rand()</code> value by <code>RAND_MAX</code> to obtain a unit interval <code>[0, 1]</code> which we would then transform to <code>[-1/1000, 1/1000]</code>, however, this was implicitly casted to an integer, which meant that the offset was actually not random (rather deterministic).
+	Fixing this issue allowed the cloth to behave properly whne we implemented self-collisions in Part 4.
+</p>
+<p>
+	The following images highlight the structure of the grid in the <i>pinned2.json</i> scene:
+</p>
+<div align="middle">
+	<table style="width=100%">
+	  <tr>
+	  <td>
+		<img src="img/part1/pinned2-structure.png" align="middle" width="400px"/>
+		<figcaption align="middle"><i>pinned2.json</i><br>Overall grid structure.</figcaption>
+	  </td>
+	  <td>
+		<img src="img/part1/pinned2-structure-closeup.png" align="middle" width="400px"/>
+		<figcaption align="middle"><i>pinned2.json</i><br>Overall grid structure (closeup).</figcaption>
+	  </td>
+	  </tr>
+	  <tr>
+		<td>
+		  <img src="img/part1/pinned2-no-shearing.png" align="middle" width="400px"/>
+		  <figcaption align="middle"><i>pinned2.json</i><br>Grid with no shearing constraints.</figcaption>
+		</td>
+		<td>
+		  <img src="img/part1/pinned2-no-shearing-closeup.png" align="middle" width="400px"/>
+		  <figcaption align="middle"><i>pinned2.json</i><br>Grid with no shearing constraints (closeup).</figcaption>
+		</td>
+		</tr>
+		<tr>
+			<td>
+			  <img src="img/part1/pinned2-shearing-only.png" align="middle" width="400px"/>
+			  <figcaption align="middle"><i>pinned2.json</i><br>Grid with only shearing constraints.</figcaption>
+			</td>
+			<td>
+			  <img src="img/part1/pinned2-shearing-only-closeup.png" align="middle" width="400px"/>
+			  <figcaption align="middle"><i>pinned2.json</i><br>Grid with only shearing constraints (closeup).</figcaption>
+			</td>
+			</tr>
+			<tr>
+			<td>
+				<img src="img/part1/pinned2-all.png" align="middle" width="400px"/>
+				<figcaption align="middle"><i>pinned2.json</i><br>Grid with all constraints.</figcaption>
+			</td>
+			<td>
+				<img src="img/part1/pinned2-all-closeup.png" align="middle" width="400px"/>
+				<figcaption align="middle"><i>pinned2.json</i><br>Grid with all constraints (closeup).</figcaption>
+			</td>
+			</tr>
+	</table>
+  </div>
+<br>
+<h2 align="middle">Part 2: Simulation via numerical integration</h2>
+<p>
+	In this part, we modified <code>Cloth::simulate(...)</code> in order to implement physical equations of motion to apply forces on the cloth's point masses to model its movement across time.
+</p>
+<p>	
+	First, we computed the total external forces acting on each point mass by accumulating the <code>external_accelerations</code> in <code>accumulated_a</code> and then setting each point masses <code>forces</code> field to <code>mass * accumulated_a</code>.
+	Next, we applied spring correction forces on point masses using Hooke's Law (as given on the spec).
+	Moreover, we also checked which constraints were enabled at the time when calculating and applying the spring correction forces and also ensured that the bending constraint was weaker than the structural and shearing constraints (we scaled <code>ks</code> as specified on spec).
+	The two point masses defining a spring were accordingly updated with equal but opposite forces given Hooke's Law.
+</p>
+<p>
+	Next, we implemented Verlet integration to compute the new point mass positions.
+	In particular, we used Verlet integration because it is an explicit integrator.
+	We defined the position of the point masses as follows: <code>x<sub>t + dt</sub> = x<sub>t</sub> + (1 - d) * (x<sub>t</sub> - x<sub>t - dt</sub>) + a<sub>t</sub> * dt<sup>2</sup></code>, where <code>d = cp->damping / 100.0</code> and <code>a<sub>t</sub> = pm.forces / mass</code>.
+	This formula was used to update the point mass's <code>position</code> and <code>last_position</code>.
+</p>
+<p>
+	In order to ensure our simulation of the cloth's movement is realistic, we constrained the position updates for the point masses according to <a href="https://www.cs.rpi.edu/~cutler/classes/advancedgraphics/S14/papers/provot_cloth_simulation_96.pdf">SIGGRAPH 1995 Provot paper</a>.
+	The research paper explains that each spring's length should never be greater than 10% of its original <code>rest_length</code>.
+	Therefore, the point masses positions were updated accordingly to ensure this constraint was satisfied.
+	In particular, if one point mass was pinned, then the entire correction would be applied to the non-pinned point mass. If both point masses were non-pinned, then the correction would be split across the two point masses (apply an equal correction to each).
+</p>
+<p>
+	<em>TODO add writeup images (first bullet point and subpoints on delvierables) and explanation!</em>
+</p>
+<p>
+	The following images showcase the cloth's resting position in the <i>pinned4.json</i> scene from two angles with the default GUI parameters.
+</p>
+<div align="middle">
+	<table style="width=100%">
+	  <tr>
+	  <td>
+		<img src="img/part2/pinned4-1.png" align="middle" width="400px"/>
+		<figcaption align="middle"><i>pinned4.json</i><br>Final resting state (viewing angle 1)</figcaption>
+	  </td>
+	  <td>
+		<img src="img/part2/pinned4-2.png" align="middle" width="400px"/>
+		<figcaption align="middle"><i>pinned4.json</i><br>Final resting state (viewing angle 2)</figcaption>
+	  </td>
+	  </tr>
+	</table>
+  </div>
+<br>
+<h2 align="middle">Part 3: Handling collisions with other objects</h2>
+<p>
+	In this part, we implemented collisions with other scene objects in order to make our scene renders and simulations more complex.
+	In particular, we implemented cloth collisions with spheres and planes, which called for modifying the following functions:
+	<ul>
+		<li><code>Sphere::collide(...)</code></li>
+		<li><code>Plane::collide(...)</code></li>
+		<li><code>Cloth::simulate(...)</code></li>
+	</ul>
+</p>
+<p>
+	In <code>Sphere::collide(...)</code>, we found the direction vector from the origin of the sphere to the point mass: <code>Vector3D origin_to_pos_dir = pm.position - origin</code>.
+	Using this direction vector, we found its length in order to determine if the point mass's position is within the sphere.
+	Specifically, if <code>radius - origin_to_pos_dir.norm()</code> was greater than or equal to 0, then the point mass was within the sphere.
+	Therefore, we would calculated the tangent point by moving in the unit direction of <code>origin_to_pos_dir</code> scaled by the <code>radius</code> from the <code>origin</code>.
+	The correction vector was then calculated as the difference between the tangent point and the point mass's last position.
+	Finally, the point mass's position was updated to apply the correction vector scaled down by <code>(1 - friction)</code>.
+</p>
+<p>
+	In <code>Plane::collide(...)</code>, we found used the <code>point</code> on the plane and the point mass's <code>last_postion</code> and <code>position</code> in order to determine whether the point mass crossed over the plane.
+	We accomplished this by finding computing <code>Vector3D plane_to_last_pos_dir = pm.last_position - point; double prev = dot(plane_to_last_pos_dir, normal);</code> and <code>Vector3D plane_to_pos_dir = pm.position - point; double curr = dot(plane_to_pos_dir, normal);</code>.
+	In particular, if the point mass crossed over the plane, we expect the sign of the product of prev and curr to be negative.
+	If the point mass crossed the plane, we executed the ray-plane intersection computation as discussed during the ray tracing lectures in class.
+	This allowed us to compute the tangent point on the plane surface.
+	We calculated the correction point using the tangent point and offsetting the position by <code>SURFACE_OFFSET</code>.
+	Finally, the point mass's position was updated to apply the correction vector scaled down by <code>(1 - friction)</code>.
+</p>
+<p>
+	In <code>Cloth::simulate(...)</code>, we iterate over all point masses and invoking <code>collide(...)</code> for each collision object in the scene with the point mass in question.
+</p>
+<p>	
+	The main bugs that we ran into for this part was misunderstanding the direction of our vectors, specifically the correction vectors that we were applying to the point mass's last position.
+	Ultimately, after implementing this part, now our scenes can simulate the cloth's movement when it collides with other objects in the scene.
+</p>
+<p>
+	The following images showcase the shaded cloth's final resting state on the sphere in the <i>sphere.json</i> scene with varying <code>ks</code> values:
+</p>
+<div align="middle">
+	<table style="width=100%">
+	  <tr>
+	  <td>
+		<img src="img/part3/sphere-collision-500ks.png" align="middle" width="400px"/>
+		<figcaption align="middle"><i>sphere.json</i><br><code>ks = 500</code></figcaption>
+	  </td>
+	  </tr>
+	  <tr>
+		<td>
+		  <img src="img/part3/sphere-collision-5000ks.png" align="middle" width="400px"/>
+		  <figcaption align="middle"><i>sphere.json</i><br><code>ks = 5000</code></figcaption>
+		</td>
+		</tr>
+		<tr>
+			<td>
+			  <img src="img/part3/sphere-collision-50000ks.png" align="middle" width="400px"/>
+			  <figcaption align="middle"><i>sphere.json</i><br><code>ks = 50000</code></figcaption>
+			</td>
+			</tr>
+	</table>
+  </div>
+<p>
+	The spring constant <code>ks</code> controls how stiff the spring in question will be. 
+	Given the mass and spring representation of the cloth, it follows that the stiffness of a spring will directly influence the movement of the cloth.
+	In particular, a higher value for <code>ks</code> will result the cloth to be more stiff, whereas a lower value for <code>ks</code> will result in the cloth to be less stiff allowing the cloth to droop more easily and hang more freely.
+	This is evident in the provided images above. 
+	When <code>ks = 500</code>, the cloth appeared to be droopier with more visible cloth wrinkles and creases. 
+	When <code>ks = 5000</code>, the cloth appeared droopy but did not reach the level of the previous image (the cloth did not stretch as much) and there were not as many cloth wrinkles and creases. 
+	When <code>ks = 50000</code>, the cloth appeared rigid, which explains why the cloth does not droop and lacks the cloth wrinkles seen in the earlier images.
+</p>
+<p>
+	The following image showcases the cloth lying at rest on the plane in the <i>plane.json</i> scene. In particular, the normal shading was utilized for this render:
+</p>
+<div align="middle">
+	<table style="width=100%">
+	  <tr>
+	  <td>
+		<img src="img/part3/plane-collision.png" align="middle" width="400px"/>
+		<figcaption align="middle"><i>plane.json</i><br>Cloth resting after plane collision</figcaption>
+	  </td>
+	</tr>
+	</table>
+  </div>
+<br>
+<h2 align="middle">Part 4: Handling self-collisions</h2>
+<p>
+	In this part, we further extended the collision behavior for the cloth, specifcally we implemented self-collisions for the cloth.
+	In order to do this, we modified the following functions:
+	<ul>
+		<li><code>Cloth::hash_position(...)</code></li>
+		<li><code>Cloth::build_spatial_map(...)</code></li>
+		<li><code>Cloth::self_collide(...)</code></li>
+		<li><code>Cloth::simulate(...)</code></li>
+	</ul>
+</p>
+<p>
+	In <code>Cloth::hash_position(...)</code>, we partitioned the 3D space into 3D boxes with the following dimensions: <code>w * h * t</code>, where <code>w = 3 * width / num_width_points</code>, <code>h = 3 * height / num_height_points</code>, and <code>t = max(w, h)</code>.
+	Then, I truncated the provided position by finding the closest 3D box (I utilized <code>w, h, t</code> and the <code>round(...)</code> function).
+	Next, I used the Cantor Pairing function to generate a unique key that will be used when building the hash table.
+	The Cantor Pairing function takes in two inputs and will output a unique value given the value.
+	I calculated the result of the Cantor Pairing function given two coordinate dimensions, and then used that result and the third dimensions as inputs to the Cantor Pairing function to obtain the unique key. 
+</p>
+<p>
+	In <code>Cloth::build_spatial_map(...)</code>, I iterated over all the point masses and accordingly populated the hash table given the unique key generated from <code>hash_position(...).</code>
+</p>
+<p>
+	In <code>Cloth::self_collide(...)</code>, I compared a given point mass against all candidate point masses (candidate point masses are the point masses under the same key in the hash table).
+	I checked if the given point mass and the candidate where within <code>2 * thickness</code> distance. If they were, I computed a correction vector that would ensure that the given point mass would be updated such that the two point masses were <code>2 * thickness</code> apart.
+	It is worth noting that the given point mass was not compared with itself.
+	Specfically, the given point mass was updated using the average of all the calculated correction vectors scaled by <code>1 / simulation_steps</code>.
+	Finally, we updated <code>Cloth::simulate(...)</code> in order to invoke <code>Cloth::build_spatial_map(...)</code> and then call <code>Cloth::self_collide(...)</code> for each point mass.
+</p>
+<p>
+	The following images showcase the cloth self-colliding in the <i>selfCollision.json</i> scene with the default GUI parameters (<code>ks = 5000</code> and <code>density = 15</code>).
+</p>
+<div align="middle">
+	<table style="width=100%">
+	  <tr>
+	  <td>
+		<img src="img/part4/default/self-collision-default-1.png" align="middle" width="400px"/>
+		<figcaption align="middle"><i>selfCollision.json</i><br>Starting position<br><code>ks = 5000</code>, <code>density = 15</code></figcaption>
+	  </td>
+	  <td>
+		<img src="img/part4/default/self-collision-default-2.png" align="middle" width="400px"/>
+		<figcaption align="middle"><i>selfCollision.json</i><br>Intermediate position<br><code>ks = 5000</code>, <code>density = 15</code></figcaption>
+	  </td>
+	</tr>
+	  <tr>
+		<td>
+		  <img src="img/part4/default/self-collision-default-3.png" align="middle" width="400px"/>
+		  <figcaption align="middle"><i>selfCollision.json</i><br>Collapsed on plane<br><code>ks = 5000</code>, <code>density = 15</code></figcaption>
+		</td>
+		<td>
+			<img src="img/part4/default/self-collision-default-4.png" align="middle" width="400px"/>
+			<figcaption align="middle"><i>selfCollision.json</i><br>Resting position on plane<br><code>ks = 5000</code>, <code>density = 15</code></figcaption>
+		  </td>
+	  </tr>
+	</table>
+  </div>
+<p>
+	The following images showcase the cloth self-colliding in the <i>selfCollisions.json</i> scene with varying <code>ks</code> and <code>density</code> values.
+	It is worth noting that these images with varying <code>ks</code> and <code>density</code> values will be compared against the above suite of images which use the default GUI parameters.
+</p>
+<div align="middle">
+	<p>Varying <code>ks</code> values:</p>
+	<table style="width=100%">
+	  <tr>
+	  <td>
+		<img src="img/part4/vary-ks/pic1-500.png" align="middle" width="400px"/>
+		<figcaption align="middle"><i>selfCollision.json</i><br>Starting position<br><code>ks = 500</code>, <code>density = 15</code></figcaption>
+	  </td>
+	  <td>
+		<img src="img/part4/vary-ks/pic2-500.png" align="middle" width="400px"/>
+		<figcaption align="middle"><i>selfCollision.json</i><br>Intermediate position<br><code>ks = 500</code>, <code>density = 15</code></figcaption>
+	  </td>
+	</tr>
+	  <tr>
+		<td>
+		  <img src="img/part4/vary-ks/pic3-500.png" align="middle" width="400px"/>
+		  <figcaption align="middle"><i>selfCollision.json</i><br>Collapsed on plane<br><code>ks = 500</code>, <code>density = 15</code></figcaption>
+		</td>
+		<td>
+			<img src="img/part4/vary-ks/pic4-500.png" align="middle" width="400px"/>
+			<figcaption align="middle"><i>selfCollision.json</i><br>Resting position on plane<br><code>ks = 500</code>, <code>density = 15</code></figcaption>
+		  </td>
+	  </tr>
+	</table>
+	<br>
+	<table style="width=100%">
+		<tr>
+		<td>
+		  <img src="img/part4/vary-ks/pic1-50000.png" align="middle" width="400px"/>
+		  <figcaption align="middle"><i>selfCollision.json</i><br>Starting position<br><code>ks = 50000</code>, <code>density = 15</code></figcaption>
+		</td>
+		<td>
+		  <img src="img/part4/vary-ks/pic2-50000.png" align="middle" width="400px"/>
+		  <figcaption align="middle"><i>selfCollision.json</i><br>Intermediate position<br><code>ks = 50000</code>, <code>density = 15</code></figcaption>
+		</td>
+	  </tr>
+		<tr>
+		  <td>
+			<img src="img/part4/vary-ks/pic3-50000.png" align="middle" width="400px"/>
+			<figcaption align="middle"><i>selfCollision.json</i><br>Collapsed on plane<br><code>ks = 50000</code>, <code>density = 15</code></figcaption>
+		  </td>
+		  <td>
+			  <img src="img/part4/vary-ks/pic4-50000.png" align="middle" width="400px"/>
+			  <figcaption align="middle"><i>selfCollision.json</i><br>Resting position on plane<br><code>ks = 50000</code>, <code>density = 15</code></figcaption>
+			</td>
+		</tr>
+	  </table>
+  </div>
+  <br>
+  <p>
+	  As discussed earlier, varying the <code>ks</code> values will change how stiff the springs will be in the cloth simulation, which in turn would dictate the movement of the cloth.
+	  When comparing the low and high <code>ks</code> images, it is evident that the lower <code>ks</code> value resulted in the cloth to be more fluid and less rigid (more "plyable"), whereas the large <code>ks</code> value images showcase how the cloth is more rigid and less willing to self collide.
+	  Foremost, it is evident that there is less wrinkles (i.e. self-collision instances) when <code>ks</code> is lower when compared with a higher value.
+	  This intuitively makes sense beacuse a weaker spring will allow the cloth to fall more freely, whereas a stronger spring will attempt to maintain the rigidity of the cloth as it falls.
+  </p>
+  <br>
+  <div align="middle">
+	<p>Varying <code>density</code> values:</p>
+	<table style="width=100%">
+	  <tr>
+	  <td>
+		<img src="img/part4/vary-density/pic1-1.5.png" align="middle" width="400px"/>
+		<figcaption align="middle"><i>selfCollision.json</i><br>Starting position<br><code>ks = 5000</code>, <code>density = 1.5</code></figcaption>
+	  </td>
+	  <td>
+		<img src="img/part4/vary-density/pic2-1.5.png" align="middle" width="400px"/>
+		<figcaption align="middle"><i>selfCollision.json</i><br>Intermediate position<br><code>ks = 5000</code>, <code>density = 1.5</code></figcaption>
+	  </td>
+	</tr>
+	  <tr>
+		<td>
+			<img src="img/part4/vary-density/pic3-1.5.png" align="middle" width="400px"/>
+			<figcaption align="middle"><i>selfCollision.json</i><br>Collapsed on plane<br><code>ks = 5000</code>, <code>density = 1.5</code></figcaption>
+		</td>
+		<td>
+			<img src="img/part4/vary-density/pic4-1.5.png" align="middle" width="400px"/>
+		<figcaption align="middle"><i>selfCollision.json</i><br>Resting position on plane<br><code>ks = 5000</code>, <code>density = 1.5</code></figcaption>
+		  </td>
+	  </tr>
+	</table>
+	<br>
+	<table style="width=100%">
+		<tr>
+		<td>
+		  <img src="img/part4/vary-density/pic1-150.png" align="middle" width="400px"/>
+		  <figcaption align="middle"><i>selfCollision.json</i><br>Starting position<br><code>ks = 5000</code>, <code>density = 150</code></figcaption>
+		</td>
+		<td>
+		  <img src="img/part4/vary-density/pic2-150.png" align="middle" width="400px"/>
+		  <figcaption align="middle"><i>selfCollision.json</i><br>Intermediate position<br><code>ks = 5000</code>, <code>density = 150</code></figcaption>
+		</td>
+	  </tr>
+		<tr>
+		  <td>
+			  <img src="img/part4/vary-density/pic3-150.png" align="middle" width="400px"/>
+			  <figcaption align="middle"><i>selfCollision.json</i><br>Collapsed on plane<br><code>ks = 5000</code>, <code>density = 150</code></figcaption>
+		  </td>
+		  <td>
+			  <img src="img/part4/vary-density/pic4-150.png" align="middle" width="400px"/>
+		  <figcaption align="middle"><i>selfCollision.json</i><br>Resting position on plane<br><code>ks = 5000</code>, <code>density = 150</code></figcaption>
+			</td>
+		</tr>
+	  </table>
+  </div>
+<p>
+	<em>TODO add writeup explainng density changes.</em>
+</p>
+<br>
+<h2 align="middle">Part 5: Shaders</h2>
+<p>
+	In this part, we implemented a variety of shaders: diffuse, Blinn-Phong, texture mapping, displacement and bump mapping, and environment-mapped reflections (mirror material).
+</p>	
+<p>
+	<em>TODO answer writeup deliverable about the vertex and fragment shader files</em>
+</p>
+<p>
+	The Blinn-Phong shading model combines ambient lighting and specular reflection to the diffuse lighting to determine the overall lighting output.
+	The shading model is determined by the following formula: <code>L = k<sub>a</sub> I<sub>a</sub> + k<sub>d</sub>(I / r<sup>2</sup>) max(0, n &middot; l) + k<sub>s</sub>(I / r<sup>2</sup>)max(0, n &middot; h)<sup>p</sup></code>.
+	We also referenced the visual diagram provided during lecture for this formula when implementing the Blinn-Phong shading:
+	
+	<div align="middle">
+		<table style="width=100%">
+		  <tr>
+		  <td>
+			<img src="img/blinn-phone-lec-slide.png" align="middle" width="400px"/>
+			<figcaption align="middle">Blinn-Phong visual from Lecture 6 Slide 26</figcaption>
+		  </td>
+		</tr>
+		</table>
+	  </div>
+
+</p>
+<p>
+	<em>TODO add writeup images and explanation!</em>
+</p>
+<br>
+<h2 align="middle">Partner Collaboration</h2>
+<p>
+	Working with a partner went well. We used the same approach as the previous project, where we assigned each person to be the "lead" on certain tasks.
+	Additionally, we continued our practice of commenting code/communicating well so that both partners would be on the same page when it comes to the implementation of the code.
+	In terms of coding, one way that we collaborated was through paired programming. We would work on one person's monitor with that 
+	individual coding and the other partner helping by checking the specs/slides/piazza as well as helping debug. When we 
+	didn't do that we would try to split up parts of the work in a divide and conquer fashion. We split up the task of the write-up
+	by making the individual who worked more on each part write out the explanations.
+</p>
+<br>
+<h2 align="middle">Project Webpage Link</h2>
+<p>
+	<a href="https://cal-cs184-student.github.io/sp22-project-webpages-mantejpanesar/proj4/index.html">Project 4 Webpage</a>
+	<br>
+	<br>
+	https://cal-cs184-student.github.io/sp22-project-webpages-mantejpanesar/proj4/index.html
+</p>
+</body>
 </html>
