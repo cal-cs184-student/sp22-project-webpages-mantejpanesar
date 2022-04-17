@@ -28,29 +28,29 @@
 
 <h2 align="middle">Overview</h2>
 <p>
-	In this project, we implemented a real-time simuation of a cloth using a mass and spring system.
+	In this project, we implemented a real-time simulation of cloth using a mass and spring system.
 	Specifically, we built the grid containing the masses and springs, applied numerical integration to simulate movement, implemented collisions with itself and other objects (sphere and plane), and various shaders.
 	This project was very interesting to implement because it involved real-time simulation renders, whereas the previous projects were focused on static scene renders.
-	Also, it was interesting to learn more of the technical aspects behind how a given mesh/grid is updated over time to mimic realistic movements.
+	Also, it was interesting to learn more about the technical aspects behind how a given mesh/grid is updated over time to mimic realistic movements.
 </p>
 <br>
 <h2 align="middle">Part 1: Masses and Springs</h2>
 <p>
-	In this part, we implemented the mass and spring based system to represent the cloth by modifying <code>Cloth::buildGrid(...)</code>. 
+	In this part, we implemented the mass and spring-based system to represent the cloth by modifying <code>Cloth::buildGrid(...)</code>. 
 	In particular, we first built the cloth with evenly spaced out point masses which spanned the provided height and width for the cloth and stored the point masses in <code>point_masses</code> in row-major order.
 	We also leveraged <code>pinned</code> in order to toggle the boolean indicating whether a point mass should be pinned in the grid or not.
 	Next, we implemented structural, shearing, and bending constraints (as specified on the spec), which are represented by springs, in order to be able to model cloth movements in later parts of the project during simulations.
 	To make the code more readable and concise, we implemented various helper functions. 
 	One of the helper functions was <code>Cloth::isValidGridIndex(...)</code> which would check whether the provided indices were valid given the grid provided. 
 	This was particularly helpful in being able to handle edge cases when adding constraints between a current point mass and surrounding point masses.
-	The remaining helper functions were <code>Cloth::addStructuralSprings(...)</code>, <code>Cloth::addShearingSprings(...)</code>, and <code>Cloth::addBendingSprings(...)</code> would accordingly invoke <code>Cloth:isValidGridIndex(...)</code> and add the respective contraints.
+	The remaining helper functions were <code>Cloth::addStructuralSprings(...)</code>, <code>Cloth::addShearingSprings(...)</code>, and <code>Cloth::addBendingSprings(...)</code> would accordingly invoke <code>Cloth:isValidGridIndex(...)</code> and add the respective constraints.
 </p>
 <p>
 	While implementing this part, we ran into two main bugs that caused our implementation to behave erroneously later on in the project.
-	Initially, the grid was not actually being stored in row major order. We were able to identify this error when implementing Part 2, as the normal coloring of the cloth seemed to be inverted.
+	Initially, the grid was not actually being stored in row-major order. We were able to identify this error when implementing Part 2, as the normal coloring of the cloth seemed to be inverted.
 	Updating how the grid was stored (flipping the order of our loops and fixing our indexing) resolved the issue and the normal coloring of the cloth in Part 2 adhered to what was expected as seen on the spec.
 	Second, when calculating the random offset for the z-coordinate, we scaled the <code>rand()</code> value by <code>RAND_MAX</code> to obtain a unit interval <code>[0, 1]</code> which we would then transform to <code>[-1/1000, 1/1000]</code>, however, this was implicitly casted to an integer, which meant that the offset was actually not random (rather deterministic).
-	Fixing this issue allowed the cloth to behave properly whne we implemented self-collisions in Part 4.
+	Fixing this issue allowed the cloth to behave properly when we implemented self-collisions in Part 4.
 </p>
 <p>
 	The following images highlight the structure of the grid in the <i>pinned2.json</i> scene:
@@ -165,11 +165,11 @@
 	<tr>
 		<td>
 		<img src="img/part2/params/high_d.png" align="middle" width="400px"/>
-		<figcaption align="middle"><i>pinned2.json</i><br>High density value</figcaption>
+		<figcaption align="middle"><i>pinned2.json</i><br>High-density value</figcaption>
 		</td>
 		<td>
 		<img src="img/part2/params/low_d.png" align="middle" width="400px"/>
-		<figcaption align="middle"><i>pinned2.json</i><br>Low density value</figcaption>
+		<figcaption align="middle"><i>pinned2.json</i><br>Low-density value</figcaption>
 		</td>
 	</tr>
 </table>
@@ -177,22 +177,22 @@
 <br>
 <p>
 	The changes in density seemed to act in an inverse way to the changes in the spring constant. Looking at 
-	the final resting images we can see that increasnig the density caused the cloth to droop lower and to look 
-	less rigid than the base render. On the other hand the decrease in density causes the cloth to look more square like
+	the final resting images we can see that increasing the density caused the cloth to droop lower and to look 
+	less rigid than the base render. On the other hand, the decrease in density causes the cloth to look more square-like
 	and not dip or deform as much as the base render. Like with the changes in the spring constant, the modifications 
-	done to the density also changed the way that the cloth fell to its final resting position. With a high density value
-	we saw the cloth act much more fluid, causing ripples to appear, while the low density render was much more rigid.
+	done to the density also changed the way that the cloth fell to its final resting position. With a high-density value,
+	we saw the cloth act much more fluid, causing ripples to appear, while the low-density render was much more rigid.
 </p>
 <div align="middle">
 	<table style="width=100%">
 	<tr>
 		<td>
 		<img src="img/part2/params/high_damp1.png" align="middle" width="400px"/>
-		<figcaption align="middle"><i>pinned2.json</i><br>High dampening value</figcaption>
+		<figcaption align="middle"><i>pinned2.json</i><br>High-dampening value</figcaption>
 		</td>
 		<td>
 		<img src="img/part2/params/low_damp1.png" align="middle" width="400px"/>
-		<figcaption align="middle"><i>pinned2.json</i><br>Low dampening value</figcaption>
+		<figcaption align="middle"><i>pinned2.json</i><br>Low-dampening value</figcaption>
 		</td>
 	</tr>
 	<tr>
@@ -222,7 +222,7 @@
 	Finally, changing the dampening values to the maximum and minimum values caused major changes in the rendering.
 	When we set the dampening value to the highest possible value we saw that the cloth acted very rigid and moved very slowly 
 	towards its final resting place. The cloth itself looked very smooth with very few wrinkles. However,
-	when we set the dampening value to the lowest possible value the cloth jumped a lot, swingning back and forth. Additionally,
+	when we set the dampening value to the lowest possible value the cloth jumped a lot, swinging back and forth. Additionally,
 	the low dampening value also caused lots of wrinkles to form in the cloth as it swung from side to side.
 </p>
 <p>
@@ -257,7 +257,7 @@
 	In <code>Sphere::collide(...)</code>, we found the direction vector from the origin of the sphere to the point mass: <code>Vector3D origin_to_pos_dir = pm.position - origin</code>.
 	Using this direction vector, we found its length in order to determine if the point mass's position is within the sphere.
 	Specifically, if <code>radius - origin_to_pos_dir.norm()</code> was greater than or equal to 0, then the point mass was within the sphere.
-	Therefore, we would calculated the tangent point by moving in the unit direction of <code>origin_to_pos_dir</code> scaled by the <code>radius</code> from the <code>origin</code>.
+	Therefore, we would calculate the tangent point by moving in the unit direction of <code>origin_to_pos_dir</code> scaled by the <code>radius</code> from the <code>origin</code>.
 	The correction vector was then calculated as the difference between the tangent point and the point mass's last position.
 	Finally, the point mass's position was updated to apply the correction vector scaled down by <code>(1 - friction)</code>.
 </p>
@@ -274,7 +274,7 @@
 	In <code>Cloth::simulate(...)</code>, we iterate over all point masses and invoke <code>collide(...)</code> for each collision object in the scene with the point mass in question.
 </p>
 <p>	
-	The main bugs that we ran into for this part was misunderstanding the direction of our vectors, specifically the correction vectors that we were applying to the point mass's last position.
+	The main bug that we ran into for this part was misunderstanding the direction of our vectors, specifically the correction vectors that we were applying to the point mass's last position.
 	Ultimately, after implementing this part, now our scenes can simulate the cloth's movement when it collides with other objects in the scene.
 </p>
 <p>
@@ -338,7 +338,7 @@
 </p>
 <p>
 	In <code>Cloth::hash_position(...)</code>, we partitioned the 3D space into 3D boxes with the following dimensions: <code>w * h * t</code>, where <code>w = 3 * width / num_width_points</code>, <code>h = 3 * height / num_height_points</code>, and <code>t = max(w, h)</code>.
-	Then, I truncated the provided position by finding the closest 3D box (I utilized <code>w, h, t</code> and the <code>round(...)</code> function).
+	Then, I truncated the provided position by finding the closest 3D box (I utilized <code>w, h, t</code>, and the <code>round(...)</code> function).
 	Next, I used the Cantor Pairing function to generate a unique key that will be used when building the hash table.
 	The Cantor Pairing function takes in two inputs and will output a unique value given the value.
 	I calculated the result of the Cantor Pairing function given two coordinate dimensions, and then used that result and the third dimensions as inputs to the Cantor Pairing function to obtain the unique key. 
@@ -348,9 +348,9 @@
 </p>
 <p>
 	In <code>Cloth::self_collide(...)</code>, I compared a given point mass against all candidate point masses (candidate point masses are the point masses under the same key in the hash table).
-	I checked if the given point mass and the candidate where within <code>2 * thickness</code> distance. If they were, I computed a correction vector that would ensure that the given point mass would be updated such that the two point masses were <code>2 * thickness</code> apart.
+	I checked if the given point mass and the candidate were within <code>2 * thickness</code> distance. If they were, I computed a correction vector that would ensure that the given point mass would be updated such that the two point masses were <code>2 * thickness</code> apart.
 	It is worth noting that the given point mass was not compared with itself.
-	Specfically, the given point mass was updated using the average of all the calculated correction vectors scaled by <code>1 / simulation_steps</code>.
+	Specifically, the given point mass was updated using the average of all the calculated correction vectors scaled by <code>1 / simulation_steps</code>.
 	Finally, we updated <code>Cloth::simulate(...)</code> in order to invoke <code>Cloth::build_spatial_map(...)</code> and then call <code>Cloth::self_collide(...)</code> for each point mass.
 </p>
 <p>
@@ -435,9 +435,9 @@
   <br>
   <p>
 	  As discussed earlier, varying the <code>ks</code> values will change how stiff the springs will be in the cloth simulation, which in turn would dictate the movement of the cloth.
-	  When comparing the low and high <code>ks</code> images, it is evident that the lower <code>ks</code> value resulted in the cloth to be more fluid and less rigid (more "plyable"), whereas the large <code>ks</code> value images showcase how the cloth is more rigid and less willing to self collide.
-	  Foremost, it is evident that there is less wrinkles (i.e. self-collision instances) when <code>ks</code> is lower when compared with a higher value.
-	  This intuitively makes sense beacuse a weaker spring will allow the cloth to fall more freely, whereas a stronger spring will attempt to maintain the rigidity of the cloth as it falls.
+	  When comparing the low and high <code>ks</code> images, it is evident that the lower <code>ks</code> value resulted in the cloth being more fluid and less rigid (more "pliable"), whereas the large <code>ks</code> value images showcase how the cloth is more rigid and less willing to self collide.
+	  Foremost, it is evident that there are fewer wrinkles (i.e. self-collision instances) when <code>ks</code> is lower when compared with a higher value.
+	  This intuitively makes sense because a weaker spring will allow the cloth to fall more freely, whereas a stronger spring will attempt to maintain the rigidity of the cloth as it falls.
   </p>
   <br>
   <div align="middle">
@@ -490,12 +490,12 @@
   </div>
   <br>
 <p>
-	When we take a look at the differening density levls we notice a change in how the simulation progresses.
-	While both starting positions seem the same, after the intial periods the images look different. Looking at the 
+	When we take a look at the differing density levels we notice a change in how the simulation progresses.
+	While both starting positions seem the same, after the initial periods the images look different. Looking at the 
 	image labeled intermediate position we see that the increase in density causes a lot more of the scrunching 
 	of the cloth. This can especially be seen towards the bottom of the cloth. When the cloth collapses
-	on the plane the cloth continues to look more deformed and smashed into the plane, more so than the lower density
-	simulation. In the final resting position we see that the cloth looks much flatter in the higher density image
+	on the plane the cloth continues to look more deformed and smashed into the plane, more so than in the lower density
+	simulation. In the final resting position, we see that the cloth looks much flatter in the higher density image
 	with the lower density image seeming to have some height between the plane and the highest point
 	of the cloth. This is expected as increasing the density will increase the mass of the simulated cloth
 	which will cause the simulation to flatten the cloth at a more drastic rate.
@@ -507,8 +507,8 @@
 </p>	
 <p>
 	Shaders are important for rendering because they allow our renders to display a variety of properties such as depth or reflectiveness.
-	In order to implement them in this project we use vertex shaders and fragment shaders from OpenGL. The vertex shaders are where 
-	we apply transforms to vertices which modifies the geometric attributes of the vertices and then write the final
+	In order to implement them in this project, we use vertex shaders and fragment shaders from OpenGL. The vertex shaders are where 
+	we apply transforms to vertices which modify the geometric attributes of the vertices and then write the final
 	position to <code>gl_Position</code> on top of information that the fragment shader uses. Fragment shaders 
 	take fragments that are created after rasterization and using the geometric attributes calculated by the vertex shaders 
 	writes the color of vertex positions. This process allows for colors and positions to be changed to create the lighting and material effects that we 
@@ -531,7 +531,7 @@
 </p>
 <p>
 	We can also single out the different aspects of Blinn-Phong shading by only using one form of lighting at a time. In order to do this,
-	we make out our vector only use the specific type of lighting that we wanted to focus on. By doing so, what we relaized was that Blinn-Phong 
+	we make our vector only use the specific type of lighting that we wanted to focus on. By doing so, what we realized was that Blinn-Phong 
 	works by combining the different component lighting types. Alone, the different lighting components do not seem realistic but together make 
 	Blinn-Phong an effective shading tool.
 </p>
@@ -561,7 +561,7 @@
 </div>
 <br>
 <p>
-	The following is our texture using a custom Oski png. In order to render these images we put the custom Oski 
+	The following is our texture using a custom Oski png. In order to render these images, we replaced the custom Oski 
 	png as our <code>texture_1.png</code> file and rendered the image.
 	<div align="middle">
 		<table style="width=100%">
@@ -607,7 +607,7 @@
 		</table>
 	</div>
 	With this new normal we multiply by the TBN matrix and pass it in as the normal vector for Blinn-Phong. By doing this, 
-	we make certain points seem more elevated without actually modifying the positions of the points. The meshes's coarsness does not
+	we make certain points seem more elevated without actually modifying the positions of the points. The mesh's coarseness does not
 	seem to make a big impact on the final render except for the fact that some of the edges seem smoother in the higher resolution images.
 </p>
 <div align="middle">
@@ -636,10 +636,10 @@
 </div>
 <br>
 <p>
-	For dispalcement shading we modified the 
-	<code>shaders/Dispalcement.frag</code> file and <code>shaders/Disaplcement.vert</code> file. Within the frag file, we do the same 
+	For displacement shading we modified the 
+	<code>shaders/Displacement.frag</code> file and <code>shaders/Displacement.vert</code> file. Within the frag file, we do the same 
 	work that we did in the bump shader case. However, we also make modifications to the vert so that the positions of the vertices actually
-	move up and down to give the texture that we want to see in our render. To do this we calculate the new position for every single point based off of the
+	move up and down to give the texture that we want to see in our render. To do this we calculate the new position for every single point based on the
 	original position, the normal, an h function (the same as we did for our bumps), and the height scaling value. 
 	<div align="middle">
 		<table style="width=100%">
@@ -651,9 +651,9 @@
 		</table>
 	</div>
 	This new position is passed into the calculation for the <code>gl_Position</code>.
-	Looking at the images we can see that these calculations work to make the image have depth with some points being more deep while others are raised. When we change 
+	Looking at the images we can see that these calculations work to make the image have depth with some points being deeper while others are raised. When we change 
 	from smaller resolution to higher resolution, these changes in the position become more pronounced with the sphere seeming to change more 
-	in the higher res image.
+	in the higher-res image.
 </p>
 <div align="middle">
 	<table style="width=100%">
