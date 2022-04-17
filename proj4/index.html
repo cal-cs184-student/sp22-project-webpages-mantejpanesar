@@ -123,8 +123,101 @@
 	In particular, if one point mass was pinned, then the entire correction would be applied to the non-pinned point mass. If both point masses were non-pinned, then the correction would be split across the two point masses (apply an equal correction to each).
 </p>
 <p>
-	<em>TODO add writeup images (first bullet point and subpoints on delvierables) and explanation!</em>
+	By experimenting with the different parameters in our simulation we can see how increasing and decreasing the values
+	changes the way that our simulation renders the cloth.
 </p>
+<div align="middle">
+	<table style="width=100%">
+		<tr>
+		<td>
+		<img src="img/part2/params/base.png" align="middle" width="400px"/>
+		<figcaption align="middle"><i>pinned2.json</i><br>No parameters changed</figcaption>
+		</td>
+	</tr>
+	</table>
+	</div>
+<br>
+<div align="middle">
+	<table style="width=100%">
+	<tr>
+		<td>
+		<img src="img/part2/params/high_ks.png" align="middle" width="400px"/>
+		<figcaption align="middle"><i>pinned2.json</i><br>High ks value</figcaption>
+		</td>
+		<td>
+		<img src="img/part2/params/low_ks.png" align="middle" width="400px"/>
+		<figcaption align="middle"><i>pinned2.json</i><br>Low ks value</figcaption>
+		</td>
+	</tr>
+</table>
+</div>
+<br>
+<p>
+	When we increase the ks value but keep the other values the same as the base simulation we see that the 
+	cloth renders as being more rigid. Instead of falling lower and creating a dip in the top part of the cloth,
+	it acts more rigid and stays in a more square shape. On the other hand, when we decrease the ks value we
+	see that the cloth loses more of its shape, creating a bigger dip in the middle and also leading to the sides
+	of the cloth being wider apart. When the cloth falls, we also saw that the lower ks allowed for a lot
+	more movement as opposed to the higher ks which caused the cloth to fall in a more rigid motion.
+</p>
+<div align="middle">
+	<table style="width=100%">
+	<tr>
+		<td>
+		<img src="img/part2/params/high_d.png" align="middle" width="400px"/>
+		<figcaption align="middle"><i>pinned2.json</i><br>High density value</figcaption>
+		</td>
+		<td>
+		<img src="img/part2/params/low_d.png" align="middle" width="400px"/>
+		<figcaption align="middle"><i>pinned2.json</i><br>Low density value</figcaption>
+		</td>
+	</tr>
+</table>
+</div>
+<br>
+<p>
+	The changes in density seemed to act in an inverse way to the changes in the spring constant. Looking at 
+	the final resting images we can see that increasnig the density caused the cloth to droop lower and to look 
+	less rigid than the base render. On the other hand the decrease in density causes the cloth to look more square like
+	and not dip or deform as much as the base render. Like with the changes in the spring constant, the modifications 
+	done to the density also changed the way that the cloth fell to its final resting position. With a high density value
+	we saw the cloth act much more fluid, causing ripples to appear, while the low density render was much more rigid.
+</p>
+<div align="middle">
+	<table style="width=100%">
+	<tr>
+		<td>
+		<img src="img/part2/params/high_damp1.png" align="middle" width="400px"/>
+		<figcaption align="middle"><i>pinned2.json</i><br>High dampening value</figcaption>
+		</td>
+		<td>
+		<img src="img/part2/params/low_damp1.png" align="middle" width="400px"/>
+		<figcaption align="middle"><i>pinned2.json</i><br>Low dampening value</figcaption>
+		</td>
+	</tr>
+	<tr>
+		<td>
+		<img src="img/part2/params/high_damp2.png" align="middle" width="400px"/>
+		<figcaption align="middle"><i>pinned2.json</i><br>High dampening value</figcaption>
+		</td>
+		<td>
+		<img src="img/part2/params/low_damp2.png" align="middle" width="400px"/>
+		<figcaption align="middle"><i>pinned2.json</i><br>Low dampening value</figcaption>
+		</td>
+	</tr>
+	<tr>
+		<td>
+		<img src="img/part2/params/high_damp3.png" align="middle" width="400px"/>
+		<figcaption align="middle"><i>pinned2.json</i><br>High dampening value</figcaption>
+		</td>
+		<td>
+		<img src="img/part2/params/low_damp3.png" align="middle" width="400px"/>
+		<figcaption align="middle"><i>pinned2.json</i><br>Low dampening value</figcaption>
+		</td>
+	</tr>
+	</table>
+	</div>
+<br>
 <p>
 	The following images showcase the cloth's resting position in the <i>pinned4.json</i> scene from two angles with the default GUI parameters.
 </p>
