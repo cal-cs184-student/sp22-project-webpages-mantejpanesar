@@ -96,7 +96,7 @@
 				<img src="img/part1/pinned2-all-closeup.png" align="middle" width="400px"/>
 				<figcaption align="middle"><i>pinned2.json</i><br>Grid with all constraints (closeup).</figcaption>
 			</td>
-			</tr>
+		</tr>
 	</table>
   </div>
 <br>
@@ -149,7 +149,7 @@
 		<figcaption align="middle"><i>pinned2.json</i><br>Low ks value</figcaption>
 		</td>
 	</tr>
-</table>
+	</table>
 </div>
 <br>
 <p>
@@ -218,6 +218,13 @@
 	</table>
 	</div>
 <br>
+<p>
+	Finally, changing the dampening values to the maximum and minimum values caused major changes in the rendering.
+	When we set the dampening value to the highest possible value we saw that the cloth acted very rigid and moved very slowly 
+	towards its final resting place. The cloth itself looked very smooth with very few wrinkles. However,
+	when we set the dampening value to the lowest possible value the cloth jumped a lot, swingning back and forth. Additionally,
+	the low dampening value also caused lots of wrinkles to form in the cloth as it swung from side to side.
+</p>
 <p>
 	The following images showcase the cloth's resting position in the <i>pinned4.json</i> scene from two angles with the default GUI parameters.
 </p>
@@ -372,7 +379,7 @@
 		  </td>
 	  </tr>
 	</table>
-  </div>
+</div>
 <p>
 	The following images showcase the cloth self-colliding in the <i>selfCollisions.json</i> scene with varying <code>ks</code> and <code>density</code> values.
 	It is worth noting that these images with varying <code>ks</code> and <code>density</code> values will be compared against the above suite of images which use the default GUI parameters.
@@ -481,6 +488,7 @@
 		</tr>
 	  </table>
   </div>
+  <br>
 <p>
 	When we take a look at the differening density levls we notice a change in how the simulation progresses.
 	While both starting positions seem the same, after the intial periods the images look different. Looking at the 
@@ -498,13 +506,18 @@
 	In this part, we implemented a variety of shaders: diffuse, Blinn-Phong, texture mapping, displacement and bump mapping, and environment-mapped reflections (mirror material).
 </p>	
 <p>
-	<em>TODO answer writeup deliverable about the vertex and fragment shader files</em>
+	Shaders are important for rendering because they allow our renders to display a variety of properties such as depth or reflectiveness.
+	In order to implement them in this project we use vertex shaders and fragment shaders from OpenGL. The vertex shaders are where 
+	we apply transforms to vertices which modifies the geometric attributes of the vertices and then write the final
+	position to <code>gl_Position</code> on top of information that the fragment shader uses. Fragment shaders 
+	take fragments that are created after rasterization and using the geometric attributes calculated by the vertex shaders 
+	writes the color of vertex positions. This process allows for colors and positions to be changed to create the lighting and material effects that we 
+	want to render.
 </p>
 <p>
 	The Blinn-Phong shading model combines ambient lighting and specular reflection to the diffuse lighting to determine the overall lighting output.
 	The shading model is determined by the following formula: <code>L = k<sub>a</sub> I<sub>a</sub> + k<sub>d</sub>(I / r<sup>2</sup>) max(0, n &middot; l) + k<sub>s</sub>(I / r<sup>2</sup>)max(0, n &middot; h)<sup>p</sup></code>.
 	We also referenced the visual diagram provided during lecture for this formula when implementing the Blinn-Phong shading:
-	
 	<div align="middle">
 		<table style="width=100%">
 		  <tr>
@@ -515,26 +528,175 @@
 		</tr>
 		</table>
 	  </div>
-
 </p>
 <p>
-	<em>TODO add writeup images and explanation!</em>
+	We can also single out the different aspects of Blinn-Phong shading by only using one form of lighting at a time. In order to do this,
+	we make out our vector only use the specific type of lighting that we wanted to focus on. By doing so, what we relaized was that Blinn-Phong 
+	works by combining the different component lighting types. Alone, the different lighting components do not seem realistic but together make 
+	Blinn-Phong an effective shading tool.
 </p>
 <div align="middle">
-<table style="width=100%">
+	<table style="width=100%">
 	<tr>
-	<td>
-	<img src="img/part5/custom/oski_start.png" align="middle" width="400px"/>
-	<figcaption align="middle">Custom Oski texture at start</figcaption>
-	</td>
-	<td>
-	<img src="img/part5/custom/oski_drape1.png" align="middle" width="400px"/>
-	<figcaption align="middle">Custom Oski texture after falling</figcaption>
-	</td>
+		<td>
+		<img src="img/part5/phong/ambient_only.png" align="middle" width="400px"/>
+		<figcaption align="middle"><i>sphere.json</i><br>Ambient only<br></figcaption>
+		</td>
+		<td>
+		<img src="img/part5/phong/diffuse_only.png" align="middle" width="400px"/>
+		<figcaption align="middle"><i>sphere.json</i><br>Diffuse only<br></figcaption>
+		</td>
 	</tr>
-</table>
+	<tr>
+		<td>
+			<img src="img/part5/phong/specular_only.png" align="middle" width="400px"/>
+			<figcaption align="middle"><i>sphere.json</i><br>Specular only<br></figcaption>
+		</td>
+		<td>
+			<img src="img/part5/phong/phong.png" align="middle" width="400px"/>
+			<figcaption align="middle"><i>sphere.json</i><br>All 3 types<br></figcaption>
+		</td>
+	</tr>
+	</table>
 </div>
 <br>
+<p>
+	The following is our texture using a custom Oski png. In order to render these images we put the custom Oski 
+	png as our <code>texture_1.png</code> file and rendered the image.
+	<div align="middle">
+		<table style="width=100%">
+			<tr>
+			<td>
+			<img src="img/part5/custom/custom.png" align="middle" width="400px"/>
+			<figcaption align="middle">Custom Oski texture</figcaption>
+			</td>
+		</tr>
+		</table>
+	</div>
+</p>
+<div align="middle">
+	<table style="width=100%">
+		<tr>
+		<td>
+		<img src="img/part5/custom/oski_start.png" align="middle" width="400px"/>
+		<figcaption align="middle">Custom Oski texture at start</figcaption>
+		</td>
+		<td>
+		<img src="img/part5/custom/oski_drape1.png" align="middle" width="400px"/>
+		<figcaption align="middle">Custom Oski texture after falling</figcaption>
+		</td>
+		</tr>
+	</table>
+</div>
+<br>
+<p>
+	We also developed shaders to render bumps and displacement. These two shaders allow our renders to have depth. Our images were rendered using the 
+	third texture, the brick texture. When we did bump rendering we only modified the <code>shaders/Bump.frag</code> file. To create the bump effect
+	we modified the normal vector that is used in Blinn-Phong shading. To modify the normal vector, we calculated the tangent-bitangent-normal matrix using
+	the values passed in from the <code>Bump.vert file</code>. We also calculated the local space normal by taking into account how the height changes as we modify
+	u and v. This is done by utilizing a <i>h(u,v)</i> function that we defined to be the <code>r</code> value stored in the texture for a <code>vec2 uv</code> which returns
+	the height encoded by the height map at our current coordinate. Using this value along with the width, height, height scaling factor <i>k<sub>h</sub></i>, and 
+	normal scaling factor, <i>k<sub>n</sub></i> we calculate our local space normal as <br> <i>n<sub>o</sub>= (-dU, -dV, 1)</i> where <i>dU</i> and <i>dV</i> are calculated as follows.
+	<div align="middle">
+		<table style="width=100%">
+			<tr>
+			<td>
+			<img src="img/part5/bump/calc.png" align="middle" width="400px"/>
+			</td>
+		</tr>
+		</table>
+	</div>
+	With this new normal we multiply by the TBN matrix and pass it in as the normal vector for Blinn-Phong. By doing this, 
+	we make certain points seem more elevated without actually modifying the positions of the points. The meshes's coarsness does not
+	seem to make a big impact on the final render except for the fact that some of the edges seem smoother in the higher resolution images.
+</p>
+<div align="middle">
+	<table style="width=100%">
+	<tr>
+		<td>
+		<img src="img/part5/bump/16_sphere.png" align="middle" width="400px"/>
+		<figcaption align="middle"><i>sphere.json</i><br>Bump using <code>-o 16 -a 16</code><br></figcaption>
+		</td>
+		<td>
+		<img src="img/part5/bump/16_drape.png" align="middle" width="400px"/>
+		<figcaption align="middle"><i>sphere.json</i><br>Bump using <code>-o 16 -a 16</code><br></figcaption>
+		</td>
+	</tr>
+	<tr>
+		<td>
+		<img src="img/part5/bump/128_sphere.png" align="middle" width="400px"/>
+		<figcaption align="middle"><i>sphere.json</i><br>Bump using <code>-o 128 -a 128</code><br></figcaption>
+		</td>
+		<td>
+		<img src="img/part5/bump/128_drape.png" align="middle" width="400px"/>
+		<figcaption align="middle"><i>sphere.json</i><br>Bump using <code>-o 128 -a 128</code><br></figcaption>
+		</td>
+	</tr>
+	</table>
+</div>
+<br>
+<p>
+	For dispalcement shading we modified the 
+	<code>shaders/Dispalcement.frag</code> file and <code>shaders/Disaplcement.vert</code> file. Within the frag file, we do the same 
+	work that we did in the bump shader case. However, we also make modifications to the vert so that the positions of the vertices actually
+	move up and down to give the texture that we want to see in our render. To do this we calculate the new position for every single point based off of the
+	original position, the normal, an h function (the same as we did for our bumps), and the height scaling value. 
+	<div align="middle">
+		<table style="width=100%">
+			<tr>
+			<td>
+			<img src="img/part5/displacement/calc.png" align="middle" width="200px"/>
+			</td>
+		</tr>
+		</table>
+	</div>
+	This new position is passed into the calculation for the <code>gl_Position</code>.
+	Looking at the images we can see that these calculations work to make the image have depth with some points being more deep while others are raised. When we change 
+	from smaller resolution to higher resolution, these changes in the position become more pronounced with the sphere seeming to change more 
+	in the higher res image.
+</p>
+<div align="middle">
+	<table style="width=100%">
+	<tr>
+		<td>
+		<img src="img/part5/displacement/16_sphere1.png" align="middle" width="400px"/>
+		<figcaption align="middle"><i>sphere.json</i><br>Displacement angle 1 using <code>-o 16 -a 16</code><br></figcaption>
+		</td>
+		<td>
+		<img src="img/part5/displacement/16_sphere2.png" align="middle" width="400px"/>
+		<figcaption align="middle"><i>sphere.json</i><br>Displacement angle 2 using <code>-o 16 -a 16</code><br></figcaption>
+		</td>
+	</tr>
+	<tr>
+		<td>
+		<img src="img/part5/displacement/128_sphere1.png" align="middle" width="400px"/>
+		<figcaption align="middle"><i>sphere.json</i><br>Displacement angle 1 using <code>-o 128 -a 128</code><br></figcaption>
+		</td>
+		<td>
+		<img src="img/part5/displacement/128_sphere2.png" align="middle" width="400px"/>
+		<figcaption align="middle"><i>sphere.json</i><br>Displacement angle 2 using <code>-o 128 -a 128</code><br></figcaption>
+		</td>
+	</tr>
+	</table>
+</div>
+<br>
+<p>
+	One final texture that we implemented was a mirror texture.
+</p>
+<div align="middle">
+	<table style="width=100%">
+		<tr>
+		<td>
+		<img src="img/part5/mirror/mirror_sphere.png" align="middle" width="400px"/>
+		<figcaption align="middle">Mirror sphere</figcaption>
+		</td>
+		<td>
+		<img src="img/part5/mirror/mirror_plane.png" align="middle" width="400px"/>
+		<figcaption align="middle">Mirror plane after falling</figcaption>
+		</td>
+		</tr>
+	</table>
+</div>
 <h2 align="middle">Partner Collaboration</h2>
 <p>
 	Working with a partner went well. We used the same approach as the previous project, where we assigned each person to be the "lead" on certain tasks.
