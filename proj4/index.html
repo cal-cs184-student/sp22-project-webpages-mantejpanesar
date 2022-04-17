@@ -162,8 +162,8 @@
 	Finally, the point mass's position was updated to apply the correction vector scaled down by <code>(1 - friction)</code>.
 </p>
 <p>
-	In <code>Plane::collide(...)</code>, we found used the <code>point</code> on the plane and the point mass's <code>last_postion</code> and <code>position</code> in order to determine whether the point mass crossed over the plane.
-	We accomplished this by finding computing <code>Vector3D plane_to_last_pos_dir = pm.last_position - point; double prev = dot(plane_to_last_pos_dir, normal);</code> and <code>Vector3D plane_to_pos_dir = pm.position - point; double curr = dot(plane_to_pos_dir, normal);</code>.
+	In <code>Plane::collide(...)</code>, we used the <code>point</code> on the plane and the point mass's <code>last_postion</code> and <code>position</code> in order to determine whether the point mass crossed over the plane.
+	We accomplished this by computing <code>Vector3D plane_to_last_pos_dir = pm.last_position - point; double prev = dot(plane_to_last_pos_dir, normal);</code> and <code>Vector3D plane_to_pos_dir = pm.position - point; double curr = dot(plane_to_pos_dir, normal);</code>.
 	In particular, if the point mass crossed over the plane, we expect the sign of the product of prev and curr to be negative.
 	If the point mass crossed the plane, we executed the ray-plane intersection computation as discussed during the ray tracing lectures in class.
 	This allowed us to compute the tangent point on the plane surface.
@@ -171,7 +171,7 @@
 	Finally, the point mass's position was updated to apply the correction vector scaled down by <code>(1 - friction)</code>.
 </p>
 <p>
-	In <code>Cloth::simulate(...)</code>, we iterate over all point masses and invoking <code>collide(...)</code> for each collision object in the scene with the point mass in question.
+	In <code>Cloth::simulate(...)</code>, we iterate over all point masses and invoke <code>collide(...)</code> for each collision object in the scene with the point mass in question.
 </p>
 <p>	
 	The main bugs that we ran into for this part was misunderstanding the direction of our vectors, specifically the correction vectors that we were applying to the point mass's last position.
@@ -205,7 +205,7 @@
 <p>
 	The spring constant <code>ks</code> controls how stiff the spring in question will be. 
 	Given the mass and spring representation of the cloth, it follows that the stiffness of a spring will directly influence the movement of the cloth.
-	In particular, a higher value for <code>ks</code> will result the cloth to be more stiff, whereas a lower value for <code>ks</code> will result in the cloth to be less stiff allowing the cloth to droop more easily and hang more freely.
+	In particular, a higher value for <code>ks</code> will result in the cloth being more stiff, whereas a lower value for <code>ks</code> will result in the cloth being less stiff allowing the cloth to droop more easily and hang more freely.
 	This is evident in the provided images above. 
 	When <code>ks = 500</code>, the cloth appeared to be droopier with more visible cloth wrinkles and creases. 
 	When <code>ks = 5000</code>, the cloth appeared droopy but did not reach the level of the previous image (the cloth did not stretch as much) and there were not as many cloth wrinkles and creases. 
@@ -389,7 +389,15 @@
 	  </table>
   </div>
 <p>
-	<em>TODO add writeup explainng density changes.</em>
+	When we take a look at the differening density levls we notice a change in how the simulation progresses.
+	While both starting positions seem the same, after the intial periods the images look different. Looking at the 
+	image labeled intermediate position we see that the increase in density causes a lot more of the scrunching 
+	of the cloth. This can especially be seen towards the bottom of the cloth. When the cloth collapses
+	on the plane the cloth continues to look more deformed and smashed into the plane, more so than the lower density
+	simulation. In the final resting position we see that the cloth looks much flatter in the higher density image
+	with the lower density image seeming to have some height between the plane and the highest point
+	of the cloth. This is expected as increasing the density will increase the mass of the simulated cloth
+	which will cause the simulation to flatten the cloth at a more drastic rate.
 </p>
 <br>
 <h2 align="middle">Part 5: Shaders</h2>
@@ -419,6 +427,20 @@
 <p>
 	<em>TODO add writeup images and explanation!</em>
 </p>
+<div align="middle">
+<table style="width=100%">
+	<tr>
+	<td>
+	<img src="img/part5/custom/oski_start.png" align="middle" width="400px"/>
+	<figcaption align="middle">Custom Oski texture at start</figcaption>
+	</td>
+	<td>
+	<img src="img/part5/custom/oski_drape1.png" align="middle" width="400px"/>
+	<figcaption align="middle">Custom Oski texture after falling</figcaption>
+	</td>
+	</tr>
+</table>
+</div>
 <br>
 <h2 align="middle">Partner Collaboration</h2>
 <p>
